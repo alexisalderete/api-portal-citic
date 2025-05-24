@@ -1,0 +1,13 @@
+# Evitar listado de directorios
+Options -Indexes
+
+# Configuración básica de PHP si tienes acceso
+<IfModule mod_php5.c>
+    php_flag display_errors off
+    php_value upload_max_filesize 10M
+    php_value post_max_size 12M
+</IfModule>
+
+RewriteEngine On
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
