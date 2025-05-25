@@ -28,6 +28,7 @@ require_once 'controllers/AuthController.php';
 require_once 'controllers/UserController.php';
 require_once 'controllers/CalificacionesController.php';
 require_once 'controllers/InscripcionesController.php';
+require_once 'controllers/MaterialesController.php';
 
 // Conectar a la base de datos
 $database = new Database();
@@ -38,6 +39,7 @@ $authController = new AuthController($db);
 $userController = new UserController($db);
 $inscripcionesController = new InscripcionesController($db);
 $calificacionesController = new CalificacionesController($db);
+$materialesController = new MaterialesController($db);
 
 // Obtener el método de la solicitud
 /*$request = $_SERVER['REQUEST_URI'];
@@ -60,6 +62,8 @@ switch ($_SERVER['REQUEST_METHOD']) {
             $inscripcionesController->search_inscripciones();
         } elseif ($action === 'calificaciones') {
             $calificacionesController->get_all_calificaciones();
+        } elseif ($action === 'materiales') {
+            $materialesController->get_all_materiales();
         } else {
             http_response_code(404);
             echo json_encode(array("message" => "Endpoint GET no encontrado."));
@@ -72,6 +76,8 @@ switch ($_SERVER['REQUEST_METHOD']) {
             $authController->login();
         } elseif ($action === 'create_calificaciones') {
             $calificacionesController->create_calificaciones();
+        } elseif ($action === 'create_materiales') {
+            $materialesController->create_materiales();
         } else {
             http_response_code(404);
             echo json_encode(array("message" => "Endpoint POST no encontrado."));
