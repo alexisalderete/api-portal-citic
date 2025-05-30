@@ -24,6 +24,7 @@ require_once 'config/Database.php';
 require_once 'models/UserModel.php';
 require_once 'models/CalificacionesModel.php';
 require_once 'models/InscripcionesModel.php';
+require_once 'models/MaterialesModel.php';
 require_once 'controllers/AuthController.php';
 require_once 'controllers/UserController.php';
 require_once 'controllers/CalificacionesController.php';
@@ -64,6 +65,8 @@ switch ($_SERVER['REQUEST_METHOD']) {
             $calificacionesController->get_all_calificaciones();
         } elseif ($action === 'materiales') {
             $materialesController->get_all_materiales();
+        } elseif ($action === 'cursos') {
+            $materialesController->get_cursos();
         } else {
             http_response_code(404);
             echo json_encode(array("message" => "Endpoint GET no encontrado."));
@@ -77,7 +80,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
         } elseif ($action === 'create_calificaciones') {
             $calificacionesController->create_calificaciones();
         } elseif ($action === 'create_materiales') {
-            $materialesController->create_materiales();
+            $materialesController->create_materiales_controller();
         } else {
             http_response_code(404);
             echo json_encode(array("message" => "Endpoint POST no encontrado."));
@@ -86,6 +89,8 @@ switch ($_SERVER['REQUEST_METHOD']) {
     case 'PUT':
         if ($action === 'update_calificaciones') {
             $calificacionesController->update_calificaciones();
+        } elseif ($action === 'update_materiales') {
+            $materialesController->update_materiales_controller();
         } else {
             http_response_code(404);
             echo json_encode(array("message" => "Endpoint PUT no encontrado."));
@@ -94,6 +99,8 @@ switch ($_SERVER['REQUEST_METHOD']) {
     case 'DELETE':
         if ($action === 'delete_calificaciones') {
             $calificacionesController->delete_calificaciones();
+        } elseif ($action === 'delete_materiales') {
+            $materialesController->delete_materiales();
         } else {
             http_response_code(404);
             echo json_encode(array("message" => "Endpoint DELETE no encontrado."));

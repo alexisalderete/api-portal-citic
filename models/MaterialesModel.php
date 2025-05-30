@@ -105,13 +105,26 @@ class MaterialesModel {
         return false;
     }
 
+    public function update_materiales_cursos_model($materiales_id, $cursos_id) {
+        $sql = 'UPDATE materiales_cursos 
+        SET cursos_id = :cursos_id
+        WHERE materiales_id = :materiales_id';
+        $result = $this->db->prepare($sql);
+        $result->bindParam(':materiales_id', $materiales_id);
+        $result->bindParam(':cursos_id', $cursos_id);
+        if($result->execute()) {
+            return true;
+        }
+        return false;
+    }
+
     public function delete_materiales_model($materiales_id) {
         $sql = 'DELETE FROM '.$this->table.' 
         WHERE materiales_id = :materiales_id';
         $result = $this->db->prepare($sql);
         $result->bindParam(':materiales_id', $materiales_id);
         if($result->execute()) {
-            return true;
+            return $result;
         }
         return false;
     }
@@ -127,7 +140,7 @@ class MaterialesModel {
         $search = isset($params['search']) ? $params['search'] : '';
         
         // Parámetros de ordenamiento
-        $sortBy = isset($params['sortBy']) ? $params['sortBy'] : 'materiales.materiales_nombre';
+        $sortBy = isset($params['sortBy']) ? $params['sortBy'] : 'materiales.materiales_created_at';
         $sortDir = isset($params['sortDir']) && strtoupper($params['sortDir']) === 'DESC' ? 'DESC' : 'ASC';
       
         // Consulta base
@@ -220,5 +233,11 @@ class MaterialesModel {
         return $result;
     }
 
-
+    public function get_cursos_model() {
+        # mostrar todos los cursos sin repetir
+        $sql = 'SELECT DISTINCT cursos_id, cursos_nombre FROM cursos ';
+        $result = $this->db->prepare($sql);
+        $result->execute();
+        return $result;
+    }
 }
