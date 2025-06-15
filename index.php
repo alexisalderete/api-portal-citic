@@ -67,7 +67,15 @@ switch ($_SERVER['REQUEST_METHOD']) {
             $materialesController->get_all_materiales();
         } elseif ($action === 'cursos') {
             $materialesController->get_cursos();
-        } else {
+        } elseif ($action === 'verify_token') {
+            $authController->verifyToken();
+        } elseif ($action === 'admin_endpoint') {
+            // Validar token y rol de admin
+            $authData = AuthController::validateToken($db, 'admin');
+            $adminController->adminAction();
+        }
+        
+        else {
             http_response_code(404);
             echo json_encode(array("message" => "Endpoint GET no encontrado."));
         }

@@ -111,7 +111,7 @@ class AuthController {
 
 
 
-    public static function validateToken($db) {
+    public static function validateToken($db, $requiredRole = null) {
         // Método mejorado para leer el token de diferentes formas
         $token = null;
         
@@ -151,12 +151,57 @@ class AuthController {
         try {
             $secretKey = "clave_secreta_super_segura";
             $decoded = JWT::decode($token, new Key($secretKey, 'HS256'));
+
+            // Verificar rol si se especifica
+            if ($requiredRole && (!isset($decoded->data->tipo) || $decoded->data->tipo !== $requiredRole)) {
+                http_response_code(403);
+                echo json_encode(["message" => "Acceso no autorizado. Rol requerido: " . $requiredRole]);
+                exit;
+            }
+
             return $decoded->data;
         } catch (Exception $e) {
             error_log("Error validando token: " . $e->getMessage());
             http_response_code(401);
             echo json_encode(["message" => "Token inválido: " . $e->getMessage()]);
             exit;
+        }
+    }
+
+
+    public function verifyToken() {
+        try {
+            $authData = self::validateToken($this->db);
+            
+            // Verificar que el usuario aún existe en la base de datos
+            $userModel = new UserModel($this->db);
+            $userModel->username = $authData->username;
+            $userExists = $userModel->login();
+            
+            if (!$userExists) {
+                http_response_code(401);
+                echo json_encode(["valid" => false, "message" => "Usuario no encontrado"]);
+                return;
+            }
+            
+            // Verificar que los roles coincidan
+            if ($userModel->tipo !== $authData->tipo) {
+                http_response_code(401);
+                echo json_encode(["valid" => false, "message" => "Privilegios modificados"]);
+                return;
+            }
+            
+            echo json_encode([
+                "valid" => true,
+                "user" => [
+                    "id" => $authData->user_id,
+                    "username" => $authData->username,
+                    "tipo" => $authData->tipo
+                ]
+            ]);
+        } catch (Exception $e) {
+            http_response_code(401);
+            echo json_encode(["valid" => false, "message" => $e->getMessage()]);
         }
     }
 
