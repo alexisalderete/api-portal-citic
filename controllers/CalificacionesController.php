@@ -109,14 +109,14 @@ class CalificacionesController {
 
 
     public function get_all_calificaciones() {
-         // Obtener todos los parámetros de la solicitud
-    $params = [
-        'page' => $_GET['page'] ?? 1,
-        'perPage' => $_GET['perPage'] ?? 5,
-        'search' => $_GET['search'] ?? '',
-        'sortBy' => $_GET['sortBy'] ?? 'estudiantes.estudiantes_nombre',
-        'sortDir' => $_GET['sortDir'] ?? 'ASC'
-    ];
+        // Obtener todos los parámetros de la solicitud
+        $params = [
+            'page' => $_GET['page'] ?? 1,
+            'perPage' => $_GET['perPage'] ?? 5,
+            'search' => $_GET['search'] ?? '',
+            'sortBy' => $_GET['sortBy'] ?? 'estudiantes.estudiantes_nombre',
+            'sortDir' => $_GET['sortDir'] ?? 'ASC'
+        ];
 
         // Pasar el término de búsqueda al modelo
         $calificaciones = $this->calificaciones->get_all_calificaciones_model($params);
@@ -129,9 +129,100 @@ class CalificacionesController {
         ]);
     }
 
+
+    public function get_calificaciones_by_user() {
+        // Validar token y obtener datos del usuario
+        $authData = AuthController::validateToken($this->db);
+        
+        // Si es estudiante, obtener sus calificaciones
+        if ($authData->tipo === 'estudiante') {
+            if (empty($authData->inscripciones_id)) {
+                http_response_code(404);
+                echo json_encode(["message" => "Estudiante no tiene inscripción asociada"]);
+                return;
+            }
+            
+            $calificaciones = $this->calificaciones->get_calificaciones_by_inscripcion_model($authData->inscripciones_id);
+
+            if ($calificaciones->rowCount() === 0) {
+                http_response_code(404);
+                echo json_encode(["message" => "No se encontraron calificaciones para esta inscripción"]);
+                return;
+            }
+            // Formatear respuesta para estudiante
+            $calificaciones_arr = array();
+            $calificaciones_arr['data'] = array();
+
+            while($row = $calificaciones->fetch(PDO::FETCH_ASSOC)) {
+                $calificaciones_item = array(
+                    "calificaciones_id" => $row['calificaciones_id'],
+                    "cursos_nombre" => $row['cursos_nombre'],
+                    "calificaciones_primer" => $row['calificaciones_primer'],
+                    "calificaciones_segundo" => $row['calificaciones_segundo']
+                );
+                array_push($calificaciones_arr['data'], $calificaciones_item);
+            }
+
+            http_response_code(200);
+            echo json_encode($calificaciones_arr);
+            return;
+            
+        }
+        // elseif ($authData->tipo === 'profesor') {
+        //     $this->calificaciones->docente_id = $authData->user_id;
+        //     $calificaciones = $this->calificaciones->get_calificaciones_by_docente_model();
+        // }
+        // Si es admin, obtener todas las calificaciones
+        else {
+            $params = [
+                'page' => $_GET['page'] ?? 1,
+                'perPage' => $_GET['perPage'] ?? 5,
+                'search' => $_GET['search'] ?? '',
+                'sortBy' => $_GET['sortBy'] ?? 'estudiantes.estudiantes_nombre',
+                'sortDir' => $_GET['sortDir'] ?? 'ASC'
+            ];
+            $calificaciones = $this->calificaciones->get_all_calificaciones_model($params);
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'data' => $calificaciones['data'],
+                'total' => $calificaciones['total']
+            ]);
+        }
+    
+        // Formatear respuesta
+        // if(isset($calificaciones['data'])) {
+        //     // Para consultas paginadas (admin/profesor)
+        //     http_response_code(200);
+        //     echo json_encode($calificaciones);
+        // } 
+        // elseif($calificaciones->rowCount() > 0) {
+        //     // Para consultas de estudiante
+        //     $calificaciones_arr = array();
+        //     $calificaciones_arr['data'] = array();
+    
+        //     while($row = $calificaciones->fetch(PDO::FETCH_ASSOC)) {
+        //         $calificaciones_item = array(
+        //             "id" => $row['calificaciones_id'],
+        //             "curso" => $row['cursos_nombre'],
+        //             "calificaciones_primer" => $row['calificaciones_primer'],
+        //             "calificaciones_segundo" => $row['calificaciones_segundo']
+        //         );
+        //         array_push($calificaciones_arr['data'], $calificaciones_item);
+        //     }
+    
+        //     http_response_code(200);
+        //     echo json_encode($calificaciones_arr);
+        // } else {
+        //     http_response_code(404);
+        //     echo json_encode(array("message" => "No se encontraron calificaciones."));
+        // }
+    }
+    
     public function get_calificaciones_by_id() {
         // Obtener el término de búsqueda del parámetro GET
-        $id = $_GET['id'] ?? '';
+        $id = $_GET['id'] ?? '';    
 
         // Pasar el término de búsqueda al modelo
         $calificaciones = $this->calificaciones->get_calificaciones_by_id_model($id);

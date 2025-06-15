@@ -61,8 +61,11 @@ switch ($_SERVER['REQUEST_METHOD']) {
             $userController->get_users();
         } elseif ($action === 'inscripciones') {
             $inscripcionesController->search_inscripciones();
-        } elseif ($action === 'calificaciones') {
-            $calificacionesController->get_all_calificaciones();
+        }
+        // elseif ($action === 'calificaciones') {
+        //     $calificacionesController->get_all_calificaciones();}
+        elseif ($action === 'calificaciones') {
+            $calificacionesController->get_calificaciones_by_user();
         } elseif ($action === 'materiales') {
             $materialesController->get_all_materiales();
         } elseif ($action === 'cursos') {

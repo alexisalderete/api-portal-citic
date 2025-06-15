@@ -8,13 +8,14 @@ class UserModel {
     public $password;
     public $tipo;
     public $created_at;
+    public $inscripciones_id;
 
     public function __construct($db) {
         $this->db = $db;
     }
     // para hacer login
     public function login() {
-        $sql = 'SELECT usuarios_id, usuarios_nombre, usuarios_clave, usuarios_tipo FROM ' . $this->table . ' WHERE usuarios_nombre = ? LIMIT 0,1';
+        $sql = 'SELECT usuarios_id, usuarios_nombre, usuarios_clave, usuarios_tipo, inscripciones_id FROM ' . $this->table . ' WHERE usuarios_nombre = ? LIMIT 0,1';
         $result = $this->db->prepare($sql);
         $this->username = htmlspecialchars(strip_tags($this->username));
         $result->bindParam(1, $this->username);
@@ -25,6 +26,7 @@ class UserModel {
             $this->username = $row['usuarios_nombre'];
             $this->password = $row['usuarios_clave'];
             $this->tipo = $row['usuarios_tipo'];
+            $this->inscripciones_id = $row['inscripciones_id'];
             return true;
         }
 
@@ -56,14 +58,14 @@ class UserModel {
     }
 
     public function get_all_users_model() {
-        $sql = 'SELECT usuarios_id, usuarios_nombre, usuarios_clave, usuarios_tipo FROM ' . $this->table;
+        $sql = 'SELECT usuarios_id, usuarios_nombre, usuarios_clave, usuarios_tipo, inscripciones_id FROM ' . $this->table;
         $result = $this->db->prepare($sql);
         $result->execute();
         return $result;
     }
 
     public function get_user_by_id_model($id) {
-        $sql = 'SELECT usuarios_id, usuarios_nombre, usuarios_clave, usuarios_tipo FROM ' . $this->table . ' WHERE usuarios_id = ? LIMIT 0,1';
+        $sql = 'SELECT usuarios_id, usuarios_nombre, usuarios_clave, usuarios_tipo, inscripciones_id FROM ' . $this->table . ' WHERE usuarios_id = ? LIMIT 0,1';
         $result = $this->db->prepare($sql);
         $result->bindParam(1, $id);
         $result->execute();

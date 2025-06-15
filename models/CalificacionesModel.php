@@ -159,14 +159,34 @@ class CalificacionesModel {
         ];
     }
 
-    public function get_calificaciones_by_inscripcion_model($estudiante) {
-        $sql = 'SELECT * FROM calificaciones
-        INNER JOIN inscripciones ON calificaciones.inscripciones_id = inscripciones.inscripciones_id
-        INNER JOIN estudiantes ON inscripciones.estudiantes_id = estudiantes.estudiantes_id
-        WHERE estudiantes.estudiantes_nombre = :Estudiante OR estudiantes.estudiantes_apellido = :Estudiante OR estudiantes.estudiantes_dni = :Estudiante';
+    public function get_calificaciones_by_inscripcion_model($inscripciones_id) {
+        $sql = 'SELECT c.calificaciones_id, c.inscripciones_id, 
+                       c.calificaciones_primer, c.calificaciones_segundo,
+                       cursos.cursos_nombre
+                FROM calificaciones c
+                INNER JOIN inscripciones i ON c.inscripciones_id = i.inscripciones_id
+                INNER JOIN cursos ON i.cursos_id = cursos.cursos_id
+                WHERE c.inscripciones_id = :inscripciones_id';
+        
         $result = $this->db->prepare($sql);
-        $estudiante = "%" . $estudiante . "%";
-        $result->bindParam(':Estudiante', $estudiante);
+        $result->bindParam(':inscripciones_id', $inscripciones_id);
+        $result->execute();
+        return $result;
+    }
+
+    public function get_calificaciones_by_docente_model() {
+        $sql = 'SELECT c.calificaciones_id, c.inscripciones_id, 
+                       c.calificaciones_primer, c.calificaciones_segundo,
+                       cursos.cursos_nombre, 
+                       estudiantes.estudiantes_nombre, estudiantes.estudiantes_apellido
+                FROM calificaciones c
+                INNER JOIN inscripciones i ON c.inscripciones_id = i.inscripciones_id
+                INNER JOIN cursos ON i.cursos_id = cursos.cursos_id
+                INNER JOIN estudiantes ON i.estudiantes_id = estudiantes.estudiantes_id
+                WHERE cursos.docentes_id = ?';
+        
+        $result = $this->db->prepare($sql);
+        $result->bindParam(1, $this->docente_id);
         $result->execute();
         return $result;
     }

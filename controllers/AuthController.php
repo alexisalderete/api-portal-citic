@@ -27,6 +27,7 @@ class AuthController {
             $this->user->username = $data->username;
             $this->user->password = $data->password;
             $this->user->tipo = $data->tipo;
+            $this->user->inscripciones_id = $data->inscripciones_id;
 
             // Verificar si el usuario ya existe
             if($this->user->login()) {
@@ -58,19 +59,7 @@ class AuthController {
 
             if($username_exists && password_verify($data->password, $this->user->password)) {
 
-
                 // Configurar el payload del token
-                /*$payload = [
-                    "iss" => "localhost", // Emisor localhost citicpy.com
-                    "aud" => "localhost", // Audiencia localhost citicpy.com
-                    "iat" => time(), // Tiempo de emisión
-                    "exp" => time() + 3600, // Expira en 1 hora
-                    "data" => [
-                        "user_id" => $this->user->id,
-                        "username" => $this->user->username
-                    ]
-                ];*/
-
                 $payload = [
                     "iss" => "citicpy.com", // Emisor localhost citicpy.com
                     "aud" => "citicpy.com", // Audiencia localhost citicpy.com
@@ -79,7 +68,8 @@ class AuthController {
                     "data" => [
                         "user_id" => $this->user->id,
                         "username" => $this->user->username,
-                        "tipo" => $this->user->tipo
+                        "tipo" => $this->user->tipo,
+                        "inscripciones_id" => $this->user->tipo === 'estudiante' ? $this->user->inscripciones_id : null
                     ]
                 ];
 
@@ -94,7 +84,8 @@ class AuthController {
                     "token" => $jwt,
                     "username" => $this->user->username,
                     "user_id" => $this->user->id,
-                    "tipo" => $this->user->tipo
+                    "tipo" => $this->user->tipo,
+                    "inscripciones_id" => $this->user->tipo === 'estudiante' ? $this->user->inscripciones_id : null
                 ));
                 return;
             }
