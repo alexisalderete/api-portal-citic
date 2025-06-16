@@ -52,7 +52,9 @@ class CalificacionesModel {
         // Limpiar datos
         $this->inscripciones_id = htmlspecialchars(strip_tags($this->inscripciones_id));
         $this->calificaciones_primer = htmlspecialchars(strip_tags($this->calificaciones_primer));
-        $this->calificaciones_segundo = htmlspecialchars(strip_tags($this->calificaciones_segundo));
+        $this->calificaciones_segundo = $this->calificaciones_segundo !== null 
+        ? htmlspecialchars(strip_tags($this->calificaciones_segundo))
+        : null;
 
         // Vincular parámetros
         $result->bindParam(':inscripciones_id', $this->inscripciones_id);

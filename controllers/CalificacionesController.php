@@ -75,9 +75,14 @@ class CalificacionesController {
             return;
         }
 
+        // Asegurarse de que calificaciones_segundo sea null si viene vacío
+        $calificaciones_segundo = isset($data['calificaciones_segundo']) && $data['calificaciones_segundo'] !== '' 
+        ? $data['calificaciones_segundo'] 
+        : null;
+
         $this->calificaciones->inscripciones_id = $data['inscripciones_id'];
         $this->calificaciones->calificaciones_primer = $data['calificaciones_primer'];
-        $this->calificaciones->calificaciones_segundo = $data['calificaciones_segundo'] ?? null;
+        $this->calificaciones->calificaciones_segundo = $calificaciones_segundo;
 
         if($this->calificaciones->update_calificaciones_model($data['id'])) {
             http_response_code(200);
