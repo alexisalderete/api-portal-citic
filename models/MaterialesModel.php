@@ -145,20 +145,26 @@ class MaterialesModel {
       
         // Consulta base
         $sql = "SELECT 
-                  materiales.materiales_id,
-                  materiales_cursos.cursos_id,
-                  materiales.materiales_nombre,
-                  materiales.materiales_descripcion,
-                  materiales.materiales_url,
-                  cursos.cursos_nombre AS cursos_nombre
-                FROM materiales
-                INNER JOIN materiales_cursos ON materiales.materiales_id = materiales_cursos.materiales_id
-                INNER JOIN cursos ON materiales_cursos.cursos_id = cursos.cursos_id";
+                mc.materiales_cursos_id,
+                m.materiales_id,
+                mc.cursos_id,
+                m.materiales_nombre,
+                m.materiales_descripcion,
+                m.materiales_url,
+                c.cursos_nombre
+            FROM materiales m
+            INNER JOIN (
+                SELECT materiales_id, MIN(materiales_cursos_id) as min_id
+                FROM materiales_cursos
+                GROUP BY materiales_id
+            ) as unique_mc ON m.materiales_id = unique_mc.materiales_id
+            INNER JOIN materiales_cursos mc ON unique_mc.min_id = mc.materiales_cursos_id
+            INNER JOIN cursos c ON mc.cursos_id = c.cursos_id";
       
         // Añadir condiciones de búsqueda si hay término
         if (!empty($search)) {
-          $sql .= " WHERE materiales.materiales_nombre LIKE :search 
-                    OR cursos.cursos_nombre LIKE :search";
+          $sql .= " WHERE m.materiales_nombre LIKE :search 
+                    OR c.cursos_nombre LIKE :search";
         }
       
         // Añadir ordenamiento
@@ -182,13 +188,18 @@ class MaterialesModel {
         $result->execute();
       
         // Obtener también el conteo total para paginación
-        $countSql = "SELECT COUNT(*) as total FROM materiales
-                     INNER JOIN materiales_cursos ON materiales.materiales_id = materiales_cursos.materiales_id
-                     INNER JOIN cursos ON materiales_cursos.cursos_id = cursos.cursos_id";
+        $countSql = "SELECT COUNT(*) as total FROM materiales m
+                     INNER JOIN (
+                        SELECT materiales_id, MIN(materiales_cursos_id) as min_id
+                        FROM materiales_cursos
+                        GROUP BY materiales_id
+                    ) as unique_mc ON m.materiales_id = unique_mc.materiales_id
+                    INNER JOIN materiales_cursos mc ON unique_mc.min_id = mc.materiales_cursos_id
+                    INNER JOIN cursos c ON mc.cursos_id = c.cursos_id";
       
         if (!empty($search)) {
-          $countSql .= " WHERE materiales.materiales_nombre LIKE :search 
-                         OR cursos.cursos_nombre LIKE :search";
+          $countSql .= " WHERE m.materiales_nombre LIKE :search 
+                         OR c.cursos_nombre LIKE :search";
         }
       
         $countResult = $this->db->prepare($countSql);
@@ -235,7 +246,9 @@ class MaterialesModel {
 
     public function get_cursos_model() {
         # mostrar todos los cursos sin repetir
-        $sql = 'SELECT DISTINCT cursos_id, cursos_nombre FROM cursos ';
+        $sql = 'SELECT MIN(cursos_id) as cursos_id, cursos_nombre 
+            FROM cursos 
+            GROUP BY cursos_nombre; ';
         $result = $this->db->prepare($sql);
         $result->execute();
         return $result;
