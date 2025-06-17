@@ -15,27 +15,31 @@ class MaterialesModel {
 
 
     // Crear materiales (registro)
-    public function create_materiales_model($materiales_nombre, $materiales_descripcion, $materiales_url) {
+    public function create_materiales_model($materiales_nombre, $materiales_descripcion, $materiales_url, $materiales_tipo = 'material') {
         $sql = 'INSERT INTO '.$this->table.' 
         SET materiales_nombre = :materiales_nombre, 
         materiales_descripcion = :materiales_descripcion, 
-        materiales_url = :materiales_url';
+        materiales_url = :materiales_url,
+        materiales_tipo = :materiales_tipo';
         $result = $this->db->prepare($sql);
         
         // Asignar a propiedades de clase
         $this->materiales_nombre = $materiales_nombre;
         $this->materiales_descripcion = $materiales_descripcion;
         $this->materiales_url = $materiales_url;
+        $this->materiales_tipo = $materiales_tipo;
         
         // Limpiar datos (solo si no son null)
         $this->materiales_nombre = $this->materiales_nombre !== null ? htmlspecialchars(strip_tags($this->materiales_nombre)) : null;
         $this->materiales_descripcion = $this->materiales_descripcion !== null ? htmlspecialchars(strip_tags($this->materiales_descripcion)) : null;
         $this->materiales_url = $this->materiales_url !== null ? htmlspecialchars(strip_tags($this->materiales_url)) : null;
+        $this->materiales_tipo = $this->materiales_tipo !== null ? htmlspecialchars(strip_tags($this->materiales_tipo)) : null;
         
         // Vincular parámetros
         $result->bindParam(':materiales_nombre', $this->materiales_nombre);
         $result->bindParam(':materiales_descripcion', $this->materiales_descripcion);
         $result->bindParam(':materiales_url', $this->materiales_url);
+        $result->bindParam(':materiales_tipo', $this->materiales_tipo);
     
         if($result->execute()) {
             return true;
@@ -43,6 +47,7 @@ class MaterialesModel {
     
         return false;
     }
+    
 
     public function create_materiales_cursos_model($materiales_id, $cursos_id) {
         $sql = 'INSERT INTO materiales_cursos
@@ -85,20 +90,23 @@ class MaterialesModel {
         $sql = 'UPDATE '.$this->table.' 
         SET materiales_nombre = :materiales_nombre,
             materiales_descripcion = :materiales_descripcion,
-            materiales_url = :materiales_url
+            materiales_url = :materiales_url,
+            materiales_tipo = :materiales_tipo
         WHERE materiales_id = :materiales_id';
         $result = $this->db->prepare($sql);
         // Limpiar datos
         $this->materiales_nombre = htmlspecialchars(strip_tags($this->materiales_nombre));
         $this->materiales_descripcion = htmlspecialchars(strip_tags($this->materiales_descripcion));
         $this->materiales_url = htmlspecialchars(strip_tags($this->materiales_url));
-
+        $this->materiales_tipo = htmlspecialchars(strip_tags($this->materiales_tipo));
+    
         // Vincular parámetros
         $result->bindParam(':materiales_nombre', $this->materiales_nombre);
         $result->bindParam(':materiales_descripcion', $this->materiales_descripcion);
         $result->bindParam(':materiales_url', $this->materiales_url);
+        $result->bindParam(':materiales_tipo', $this->materiales_tipo);
         $result->bindParam(':materiales_id', $materiales_id);
-
+    
         if($result->execute()) {
             return true;
         }
@@ -151,6 +159,7 @@ class MaterialesModel {
                 m.materiales_nombre,
                 m.materiales_descripcion,
                 m.materiales_url,
+                m.materiales_tipo,
                 c.cursos_nombre
             FROM materiales m
             INNER JOIN (
@@ -218,15 +227,24 @@ class MaterialesModel {
     }
 
 
-    public function get_materiales_by_curso_model($cursos_id) {
+    public function get_materiales_by_curso_model($cursos_id, $tipo = null) {
         $sql = 'SELECT m.*, c.cursos_nombre 
                 FROM materiales m
                 INNER JOIN materiales_cursos mc ON m.materiales_id = mc.materiales_id
                 INNER JOIN cursos c ON mc.cursos_id = c.cursos_id
                 WHERE mc.cursos_id = :cursos_id';
+        
+        if ($tipo !== null && in_array($tipo, ['material', 'tarea'])) {
+            $sql .= ' AND m.materiales_tipo = :tipo';
+        }
                 
         $result = $this->db->prepare($sql);
         $result->bindParam(':cursos_id', $cursos_id);
+        
+        if ($tipo !== null && in_array($tipo, ['material', 'tarea'])) {
+            $result->bindParam(':tipo', $tipo);
+        }
+        
         $result->execute();
         return $result;
     }

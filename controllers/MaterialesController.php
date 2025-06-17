@@ -8,34 +8,31 @@ class MaterialesController {
         $this->materiales = new MaterialesModel($db);
     }
 
+// En create_materiales_controller
     public function create_materiales_controller() {
-        // Obtener datos del POST
         $data = json_decode(file_get_contents("php://input"), true);
 
-        // Validar que los datos requeridos estén presentes
-        if (!isset($data['materiales_nombre'])) {
-            http_response_code(400);
-            echo json_encode(array("message" => "El campo materiales_nombre es requerido."));
-            return;
+        // Validaciones requeridas
+        $required_fields = ['materiales_nombre', 'materiales_descripcion', 'materiales_url', 'cursos_nombre'];
+        foreach ($required_fields as $field) {
+            if (!isset($data[$field])) {
+                http_response_code(400);
+                echo json_encode(array("message" => "El campo $field es requerido."));
+                return;
+            }
         }
 
-        if (!isset($data['materiales_descripcion'])) {
-            http_response_code(400);
-            echo json_encode(array("message" => "El campo materiales_descripcion es requerido."));
-            return;
-        }
+        // Tipo de material (por defecto 'material')
+        $materiales_tipo = isset($data['materiales_tipo']) && in_array($data['materiales_tipo'], ['material', 'tarea']) 
+            ? $data['materiales_tipo'] 
+            : 'material';
 
-        if (!isset($data['materiales_url'])) {
-            http_response_code(400);
-            echo json_encode(array("message" => "El campo materiales_url es requerido."));
-            return;
-        }
-
-        // Procesar la creación del material
+        // Crear el material
         $created = $this->materiales->create_materiales_model(
             $data['materiales_nombre'],
             $data['materiales_descripcion'],
-            $data['materiales_url']
+            $data['materiales_url'],
+            $materiales_tipo
         );
 
         if (!$created) {
@@ -44,10 +41,10 @@ class MaterialesController {
             return;
         }
 
-        // Obtener el ID del material recién creado
+        // Obtener ID del material creado
         $material_id = $this->db->lastInsertId();
 
-        // Buscar el curso por nombre
+        // Buscar y asociar cursos
         $cursos = $this->materiales->get_cursos_by_nombre_model($data['cursos_nombre']);
         if($cursos->rowCount() == 0) {
             http_response_code(400);
@@ -55,29 +52,20 @@ class MaterialesController {
             return;
         }
 
-        // Asociar material a todos los cursos con ese nombre
         $cursos = $cursos->fetchAll(PDO::FETCH_ASSOC);
         foreach($cursos as $curso) {
-            $associated = $this->materiales->create_materiales_cursos_model(
-                $material_id,
-                $curso['cursos_id']
-            );
-
-            if (!$associated) {
-                http_response_code(500);
-                echo json_encode(array("message" => "Error al asociar el material con el curso."));
-                return;
-            }
+            $this->materiales->create_materiales_cursos_model($material_id, $curso['cursos_id']);
         }
 
         http_response_code(201);
         echo json_encode(array(
-            "message" => "Material creado y asociado exitosamente.",
+            "message" => "Material creado exitosamente.",
             "data" => array(
                 "materiales_id" => $material_id,
                 "materiales_nombre" => $data['materiales_nombre'],
                 "materiales_descripcion" => $data['materiales_descripcion'],
                 "materiales_url" => $data['materiales_url'],
+                "materiales_tipo" => $materiales_tipo,
                 "cursos_nombre" => $data['cursos_nombre']
             )
         ));
@@ -102,131 +90,56 @@ class MaterialesController {
         }
     }
 
-    // public function create_materiales_cursos_controller(){
-    //     // Obtener datos del POST
-    //     $data = json_decode(file_get_contents("php://input"), true);
-
-    //     // Validar que los datos requeridos estén presentes
-    //     if (!isset($data['materiales_id'])) {
-    //         http_response_code(400);
-    //         echo json_encode(array("message" => "El campo materiales_id es requerido."));
-    //         return;
-    //     }
-
-    //     if (!isset($data['cursos_nombre'])) {
-    //         http_response_code(400);
-    //         echo json_encode(array("message" => "El campo cursos_nombre es requerido."));
-    //         return;
-    //     }
-
-    //     if (!is_numeric($data['materiales_id'])) {
-    //         http_response_code(400);
-    //         echo json_encode(array("message" => "materiales_id debe ser numérico."));
-    //         return;
-    //     }
-
-    //     $cursos = $this->materiales->get_cursos_by_nombre_model($data['cursos_nombre']);
-
-    //     if($cursos->rowCount() == 0) {
-    //         http_response_code(400);
-    //         echo json_encode(array("message" => "El curso no existe."));
-    //         return;
-    //     }
-
-    //     #en caso de que el haya mas cursos con el mismo nombre, haz un foreach
-    //     $cursos = $cursos->fetchAll(PDO::FETCH_ASSOC);
-
-    //     foreach($cursos as $curso) {
-    //         $data['cursos_id'] = $curso['cursos_id'];
-
-    //         $created = $this->materiales->create_materiales_cursos_model(
-    //             $data['materiales_id'],
-    //             $data['cursos_id']
-    //         );
-
-    //         if ($created) {
-    //             http_response_code(201);
-    //             echo json_encode(array(
-    //                 "message" => "Material agregado exitosamente.",
-    //                 "data" => array(
-    //                     "materiales_id" => $data['materiales_id'],
-    //                     "cursos_id" => $data['cursos_id']
-    //                 )
-    //             ));
-    //         } else {
-    //             http_response_code(500);
-    //             echo json_encode(array("message" => "Error al agregar el material."));
-    //         }
-    //     }
-
-    // }
-
-    
-
     public function update_materiales_controller() {
-        // Obtener datos del POST
         $data = json_decode(file_get_contents("php://input"), true);
-
-        // Validar datos
-        if(empty($data['materiales_id'])) {
-            http_response_code(400);
-            echo json_encode(array("message" => "El ID del material es requerido."));
-            return;
+    
+        // Validaciones requeridas
+        $required_fields = ['materiales_id', 'materiales_nombre', 'materiales_descripcion', 'materiales_url', 'cursos_nombre'];
+        foreach ($required_fields as $field) {
+            if (!isset($data[$field])) {
+                http_response_code(400);
+                echo json_encode(array("message" => "El campo $field es requerido."));
+                return;
+            }
         }
-
-        if(!isset($data['materiales_nombre'])) {
-            http_response_code(400);
-            echo json_encode(array("message" => "El campo materiales_nombre es requerido."));
-            return;
-        }
-
-        if(!isset($data['materiales_descripcion'])) {
-            http_response_code(400);
-            echo json_encode(array("message" => "El campo materiales_descripcion es requerido."));
-            return;
-        }
-
-        if(!isset($data['materiales_url'])) {
-            http_response_code(400);
-            echo json_encode(array("message" => "El campo materiales_url es requerido."));
-            return;
-        }
-
-        if(!isset($data['cursos_nombre'])) {
-            http_response_code(400);
-            echo json_encode(array("message" => "El campo cursos_nombre es requerido."));
-            return;
-        }
-
+    
+        // Tipo de material (mantener el existente si no se proporciona)
+        $materiales_tipo = isset($data['materiales_tipo']) && in_array($data['materiales_tipo'], ['material', 'tarea']) 
+            ? $data['materiales_tipo'] 
+            : null;
+    
+        // Asignar propiedades
         $this->materiales->materiales_nombre = $data['materiales_nombre'];
         $this->materiales->materiales_descripcion = $data['materiales_descripcion'];
         $this->materiales->materiales_url = $data['materiales_url'];
-
+        if ($materiales_tipo !== null) {
+            $this->materiales->materiales_tipo = $materiales_tipo;
+        }
+    
+        // Actualizar material
         if(!$this->materiales->update_materiales_model($data['materiales_id'])) {
             http_response_code(503);
             echo json_encode(array("message" => "No se pudo actualizar el material."));
             return;
         }
-
-        // Buscar el curso por nombre
+    
+        // Buscar curso por nombre
         $cursos = $this->materiales->get_cursos_by_nombre_model($data['cursos_nombre']);
         if($cursos->rowCount() == 0) {
             http_response_code(400);
             echo json_encode(array("message" => "El curso no existe."));
             return;
         }
-
-        // Actualizar la relación con el curso
-        $curso = $cursos->fetch(PDO::FETCH_ASSOC);
-        $updated = $this->materiales->update_materiales_cursos_model($data['materiales_id'], $curso['cursos_id']);
-
-        if($updated) {
-            http_response_code(200);
-            echo json_encode(array("message" => "Material actualizado exitosamente."));
-        } else {
-            http_response_code(503);
-            echo json_encode(array("message" => "No se pudo actualizar el material."));
+    
+        // Actualizar relación con cursos (eliminar antiguas y crear nuevas)
+        $this->materiales->delete_materiales_cursos_model($data['materiales_id']);
+        $cursos = $cursos->fetchAll(PDO::FETCH_ASSOC);
+        foreach($cursos as $curso) {
+            $this->materiales->create_materiales_cursos_model($data['materiales_id'], $curso['cursos_id']);
         }
+    
+        http_response_code(200);
+        echo json_encode(array("message" => "Material actualizado exitosamente."));
     }
 
     public function delete_materiales() {
@@ -274,7 +187,7 @@ class MaterialesController {
 
 
     public function get_materiales_by_estudiante() {
-        // Validar token y obtener datos del usuario
+        // Validar token
         $authData = AuthController::validateToken($this->db);
         
         // Solo para estudiantes
@@ -290,6 +203,9 @@ class MaterialesController {
             return;
         }
         
+        // Obtener parámetros opcionales
+        $tipo = $_GET['tipo'] ?? null; // 'material' o 'tarea'
+        
         // Obtener el curso del estudiante
         $inscripcionModel = new InscripcionesModel($this->db);
         $curso = $inscripcionModel->get_curso_by_inscripcion($authData->inscripciones_id);
@@ -300,24 +216,25 @@ class MaterialesController {
             return;
         }
         
-        // Obtener materiales del curso
-        $materiales = $this->materiales->get_materiales_by_curso_model($curso['cursos_id']);
+        // Obtener materiales del curso (filtrados por tipo si se especifica)
+        $materiales = $this->materiales->get_materiales_by_curso_model($curso['cursos_id'], $tipo);
         
         // Formatear respuesta
         $materiales_arr = array();
         $materiales_arr['data'] = array();
-
+    
         while($row = $materiales->fetch(PDO::FETCH_ASSOC)) {
             $materiales_item = array(
                 "materiales_id" => $row['materiales_id'],
                 "materiales_nombre" => $row['materiales_nombre'],
                 "materiales_descripcion" => $row['materiales_descripcion'],
                 "materiales_url" => $row['materiales_url'],
+                "materiales_tipo" => $row['materiales_tipo'],
                 "cursos_nombre" => $row['cursos_nombre']
             );
             array_push($materiales_arr['data'], $materiales_item);
         }
-
+    
         http_response_code(200);
         echo json_encode($materiales_arr);
     }
