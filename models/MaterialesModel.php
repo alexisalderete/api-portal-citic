@@ -217,17 +217,31 @@ class MaterialesModel {
         ];
     }
 
-    public function get_materiales_by_curso_model($curso) {
-        $sql = 'SELECT * FROM materiales
-        INNER JOIN materiales_cursos ON materiales.materiales_id = materiales_cursos.materiales_id
-        INNER JOIN cursos ON materiales_cursos.cursos_id = cursos.cursos_id
-        WHERE cursos.cursos_nombre = :Curso';
+
+    public function get_materiales_by_curso_model($cursos_id) {
+        $sql = 'SELECT m.*, c.cursos_nombre 
+                FROM materiales m
+                INNER JOIN materiales_cursos mc ON m.materiales_id = mc.materiales_id
+                INNER JOIN cursos c ON mc.cursos_id = c.cursos_id
+                WHERE mc.cursos_id = :cursos_id';
+                
         $result = $this->db->prepare($sql);
-        $curso = "%" . $curso . "%";
-        $result->bindParam(':Curso', $curso);
+        $result->bindParam(':cursos_id', $cursos_id);
         $result->execute();
         return $result;
     }
+
+    // public function get_materiales_by_curso_model($curso) {
+    //     $sql = 'SELECT * FROM materiales
+    //     INNER JOIN materiales_cursos ON materiales.materiales_id = materiales_cursos.materiales_id
+    //     INNER JOIN cursos ON materiales_cursos.cursos_id = cursos.cursos_id
+    //     WHERE cursos.cursos_nombre = :Curso';
+    //     $result = $this->db->prepare($sql);
+    //     $curso = "%" . $curso . "%";
+    //     $result->bindParam(':Curso', $curso);
+    //     $result->execute();
+    //     return $result;
+    // }
 
     public function get_materiales_by_id_model($materiales_id) {
         $sql = 'SELECT materiales.materiales_id,

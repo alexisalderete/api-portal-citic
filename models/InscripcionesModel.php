@@ -38,5 +38,19 @@ class InscripcionesModel {
         return $result;
     }
 
+    // En InscripcionesModel.php
+    public function get_curso_by_inscripcion($inscripciones_id) {
+        $sql = 'SELECT c.cursos_id, c.cursos_nombre 
+                FROM cursos c
+                INNER JOIN inscripciones i ON c.cursos_id = i.cursos_id
+                WHERE i.inscripciones_id = :inscripciones_id';
+        
+        $result = $this->db->prepare($sql);
+        $result->bindParam(':inscripciones_id', $inscripciones_id);
+        $result->execute();
+        
+        return $result->fetch(PDO::FETCH_ASSOC);
+    }
+
 
 }

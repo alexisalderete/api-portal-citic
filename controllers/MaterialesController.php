@@ -272,6 +272,56 @@ class MaterialesController {
         ]);
     }
 
+
+    public function get_materiales_by_estudiante() {
+        // Validar token y obtener datos del usuario
+        $authData = AuthController::validateToken($this->db);
+        
+        // Solo para estudiantes
+        if ($authData->tipo !== 'estudiante') {
+            http_response_code(403);
+            echo json_encode(["message" => "Acceso no autorizado"]);
+            return;
+        }
+        
+        if (empty($authData->inscripciones_id)) {
+            http_response_code(404);
+            echo json_encode(["message" => "Estudiante no tiene inscripción asociada"]);
+            return;
+        }
+        
+        // Obtener el curso del estudiante
+        $inscripcionModel = new InscripcionesModel($this->db);
+        $curso = $inscripcionModel->get_curso_by_inscripcion($authData->inscripciones_id);
+        
+        if (!$curso) {
+            http_response_code(404);
+            echo json_encode(["message" => "No se encontró el curso del estudiante"]);
+            return;
+        }
+        
+        // Obtener materiales del curso
+        $materiales = $this->materiales->get_materiales_by_curso_model($curso['cursos_id']);
+        
+        // Formatear respuesta
+        $materiales_arr = array();
+        $materiales_arr['data'] = array();
+
+        while($row = $materiales->fetch(PDO::FETCH_ASSOC)) {
+            $materiales_item = array(
+                "materiales_id" => $row['materiales_id'],
+                "materiales_nombre" => $row['materiales_nombre'],
+                "materiales_descripcion" => $row['materiales_descripcion'],
+                "materiales_url" => $row['materiales_url'],
+                "cursos_nombre" => $row['cursos_nombre']
+            );
+            array_push($materiales_arr['data'], $materiales_item);
+        }
+
+        http_response_code(200);
+        echo json_encode($materiales_arr);
+    }
+
     public function get_materiales_by_id() {
         // Obtener el término de búsqueda del parámetro GET
         $id = $_GET['id'] ?? '';
