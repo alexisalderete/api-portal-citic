@@ -91,6 +91,7 @@ class MaterialesController {
     }
 
     public function update_materiales_controller() {
+        $this->db->beginTransaction();
         $data = json_decode(file_get_contents("php://input"), true);
     
         // Validaciones requeridas
@@ -118,6 +119,7 @@ class MaterialesController {
     
         // Actualizar material
         if(!$this->materiales->update_materiales_model($data['materiales_id'])) {
+            $this->db->rollBack();
             http_response_code(503);
             echo json_encode(array("message" => "No se pudo actualizar el material."));
             return;
@@ -126,6 +128,7 @@ class MaterialesController {
         // Buscar curso por nombre
         $cursos = $this->materiales->get_cursos_by_nombre_model($data['cursos_nombre']);
         if($cursos->rowCount() == 0) {
+            $this->db->rollBack();
             http_response_code(400);
             echo json_encode(array("message" => "El curso no existe."));
             return;
@@ -138,6 +141,7 @@ class MaterialesController {
             $this->materiales->create_materiales_cursos_model($data['materiales_id'], $curso['cursos_id']);
         }
     
+        $this->db->commit();
         http_response_code(200);
         echo json_encode(array("message" => "Material actualizado exitosamente."));
     }

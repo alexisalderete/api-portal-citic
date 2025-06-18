@@ -7,6 +7,7 @@ class MaterialesModel {
     public $materiales_nombre;
     public $materiales_descripcion;
     public $materiales_url;
+    public $materiales_tipo;
     public $cursos_id;
 
     public function __construct($db) {
@@ -137,6 +138,17 @@ class MaterialesModel {
         return false;
     }
 
+    public function delete_materiales_cursos_model($materiales_id) {
+        $sql = 'DELETE FROM materiales_cursos 
+                WHERE materiales_id = :materiales_id';
+        $result = $this->db->prepare($sql);
+        $result->bindParam(':materiales_id', $materiales_id);
+        
+        if($result->execute()) {
+            return true;
+        }
+        return false;
+    }
 
     public function get_all_materiales_model($params = []) {
         // Parámetros de paginación
