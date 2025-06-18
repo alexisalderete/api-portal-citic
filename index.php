@@ -65,9 +65,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
         elseif ($action === 'calificaciones') {
             $calificacionesController->get_calificaciones_by_user();
         } elseif ($action === 'materiales') {
-            $materialesController->get_all_materiales();
-        } elseif ($action === 'mis_materiales') {
-            $materialesController->get_materiales_by_estudiante();
+            $materialesController->get_materiales_by_user();
         } elseif ($action === 'cursos') {
             $materialesController->get_cursos();
         } elseif ($action === 'verify_token') {

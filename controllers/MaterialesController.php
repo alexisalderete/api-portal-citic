@@ -189,6 +189,96 @@ class MaterialesController {
         ]);
     }
 
+    public function get_materiales_by_user() {
+        // Validar token
+        $authData = AuthController::validateToken($this->db);
+
+
+
+        if ($authData->tipo === 'estudiante') {
+            if (empty($authData->inscripciones_id)) {
+                http_response_code(404);
+                echo json_encode(["message" => "Estudiante no tiene inscripción asociada"]);
+                return;
+            }
+
+            // Obtener parámetros opcionales
+            $tipo = $_GET['tipo']; // 'material' o 'tarea'
+
+            if($tipo != 'material' && $tipo != 'tarea'){
+                http_response_code(404);
+                echo json_encode(["message" => "El tipo de material es diferente a material y tarea"]);
+                return;
+            }
+
+            // Obtener el curso del estudiante
+            $inscripcionModel = new InscripcionesModel($this->db);
+            $curso = $inscripcionModel->get_curso_by_inscripcion($authData->inscripciones_id);
+
+            if (!$curso) {
+                http_response_code(404);
+                echo json_encode(["message" => "No se encontró el curso del estudiante"]);
+                return;
+            }
+
+            // Obtener materiales del curso (filtrados por tipo si se especifica)
+            $materiales = $this->materiales->get_materiales_by_curso_model($curso['cursos_id'], $tipo);
+
+            // Formatear respuesta
+            $materiales_arr = array();
+            $materiales_arr['data'] = array();
+
+            while($row = $materiales->fetch(PDO::FETCH_ASSOC)) {
+                $materiales_item = array(
+                    "materiales_id" => $row['materiales_id'],
+                    "materiales_nombre" => $row['materiales_nombre'],
+                    "materiales_descripcion" => $row['materiales_descripcion'],
+                    "materiales_url" => $row['materiales_url'],
+                    "materiales_tipo" => $row['materiales_tipo'],
+                    "cursos_nombre" => $row['cursos_nombre']
+                );
+                array_push($materiales_arr['data'], $materiales_item);
+            }
+
+            http_response_code(200);
+            echo json_encode($materiales_arr);
+            
+        }
+        else if ($authData->tipo === 'profesor' || $authData->tipo === 'admin') {
+            $params = [
+                'page' => $_GET['page'] ?? 1,
+                'perPage' => $_GET['perPage'] ?? 5,
+                'search' => $_GET['search'] ?? '',
+                'sortBy' => $_GET['sortBy'] ?? 'materiales.materiales_created_at',
+                'sortDir' => $_GET['sortDir'] ?? 'DESC',
+                'tipo' => $_GET['tipo'] ?? ''
+            ];
+
+            if($params['tipo'] != 'material' && $params['tipo'] != 'tarea'){
+                http_response_code(404);
+                echo json_encode(["message" => "El tipo de material es diferente a material y tarea"]);
+                return;
+            }
+
+            // Pasar el término de búsqueda al modelo
+            $materiales = $this->materiales->get_all_materiales_model($params);
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'data' => $materiales['data'],
+                'total' => $materiales['total']
+            ]);
+        }
+        else {
+            http_response_code(403);
+            echo json_encode(["message" => "Acceso no autorizado"]);
+            return;
+        }
+
+
+    }
+
 
     public function get_materiales_by_estudiante() {
         // Validar token

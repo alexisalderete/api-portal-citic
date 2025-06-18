@@ -158,6 +158,8 @@ class MaterialesModel {
       
         // Parámetros de búsqueda
         $search = isset($params['search']) ? $params['search'] : '';
+        $tipo = isset($params['tipo']) ? $params['tipo'] : '';
+        //$tipo = $tipo === '' ? 'material' : 'tarea';
         
         // Parámetros de ordenamiento
         $sortBy = isset($params['sortBy']) ? $params['sortBy'] : 'materiales.materiales_created_at';
@@ -180,12 +182,13 @@ class MaterialesModel {
                 GROUP BY materiales_id
             ) as unique_mc ON m.materiales_id = unique_mc.materiales_id
             INNER JOIN materiales_cursos mc ON unique_mc.min_id = mc.materiales_cursos_id
-            INNER JOIN cursos c ON mc.cursos_id = c.cursos_id";
+            INNER JOIN cursos c ON mc.cursos_id = c.cursos_id
+            WHERE m.materiales_tipo = :tipo";
       
         // Añadir condiciones de búsqueda si hay término
         if (!empty($search)) {
-          $sql .= " WHERE m.materiales_nombre LIKE :search 
-                    OR c.cursos_nombre LIKE :search";
+          $sql .= " AND (m.materiales_nombre LIKE :search 
+                    OR c.cursos_nombre LIKE :search)";
         }
       
         // Añadir ordenamiento
@@ -205,6 +208,7 @@ class MaterialesModel {
         // Vincular parámetros de paginación
         $result->bindParam(':offset', $offset, PDO::PARAM_INT);
         $result->bindParam(':perPage', $perPage, PDO::PARAM_INT);
+        $result->bindParam(':tipo', $tipo);
       
         $result->execute();
       
@@ -216,11 +220,12 @@ class MaterialesModel {
                         GROUP BY materiales_id
                     ) as unique_mc ON m.materiales_id = unique_mc.materiales_id
                     INNER JOIN materiales_cursos mc ON unique_mc.min_id = mc.materiales_cursos_id
-                    INNER JOIN cursos c ON mc.cursos_id = c.cursos_id";
+                    INNER JOIN cursos c ON mc.cursos_id = c.cursos_id
+                    WHERE m.materiales_tipo = :tipo";
       
         if (!empty($search)) {
-          $countSql .= " WHERE m.materiales_nombre LIKE :search 
-                         OR c.cursos_nombre LIKE :search";
+          $countSql .= " AND (m.materiales_nombre LIKE :search 
+                         OR c.cursos_nombre LIKE :search)";
         }
       
         $countResult = $this->db->prepare($countSql);
@@ -228,6 +233,7 @@ class MaterialesModel {
         if (!empty($search)) {
           $countResult->bindParam(':search', $searchTerm);
         }
+        $countResult->bindParam(':tipo', $tipo);
       
         $countResult->execute();
         $total = $countResult->fetch(PDO::FETCH_ASSOC)['total'];
@@ -239,23 +245,17 @@ class MaterialesModel {
     }
 
 
-    public function get_materiales_by_curso_model($cursos_id, $tipo = null) {
+    public function get_materiales_by_curso_model($cursos_id, $tipo) {
         $sql = 'SELECT m.*, c.cursos_nombre 
                 FROM materiales m
                 INNER JOIN materiales_cursos mc ON m.materiales_id = mc.materiales_id
                 INNER JOIN cursos c ON mc.cursos_id = c.cursos_id
-                WHERE mc.cursos_id = :cursos_id';
-        
-        if ($tipo !== null && in_array($tipo, ['material', 'tarea'])) {
-            $sql .= ' AND m.materiales_tipo = :tipo';
-        }
-                
+                WHERE mc.cursos_id = :cursos_id
+                AND m.materiales_tipo = :tipo';
+
         $result = $this->db->prepare($sql);
         $result->bindParam(':cursos_id', $cursos_id);
-        
-        if ($tipo !== null && in_array($tipo, ['material', 'tarea'])) {
-            $result->bindParam(':tipo', $tipo);
-        }
+        $result->bindParam(':tipo', $tipo);
         
         $result->execute();
         return $result;
