@@ -25,11 +25,13 @@ require_once 'models/UserModel.php';
 require_once 'models/CalificacionesModel.php';
 require_once 'models/InscripcionesModel.php';
 require_once 'models/MaterialesModel.php';
+require_once 'models/PagosModel.php';
 require_once 'controllers/AuthController.php';
 require_once 'controllers/UserController.php';
 require_once 'controllers/CalificacionesController.php';
 require_once 'controllers/InscripcionesController.php';
 require_once 'controllers/MaterialesController.php';
+require_once 'controllers/PagosController.php';
 
 // Conectar a la base de datos
 $database = new Database();
@@ -41,6 +43,7 @@ $userController = new UserController($db);
 $inscripcionesController = new InscripcionesController($db);
 $calificacionesController = new CalificacionesController($db);
 $materialesController = new MaterialesController($db);
+$pagosController = new PagosController($db);
 
 // Obtener el método de la solicitud
 /*$request = $_SERVER['REQUEST_URI'];
@@ -68,6 +71,8 @@ switch ($_SERVER['REQUEST_METHOD']) {
             $materialesController->get_materiales_by_user();
         } elseif ($action === 'cursos') {
             $materialesController->get_cursos();
+        } elseif ($action === 'pagos') {
+            $pagosController->get_pagos_by_user();
         } elseif ($action === 'verify_token') {
             $authController->verifyToken();
         } elseif ($action === 'admin_endpoint') {
