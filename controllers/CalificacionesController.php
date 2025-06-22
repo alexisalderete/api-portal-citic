@@ -150,8 +150,11 @@ class CalificacionesController {
             $calificaciones = $this->calificaciones->get_calificaciones_by_inscripcion_model($authData->inscripciones_id);
 
             if ($calificaciones->rowCount() === 0) {
-                http_response_code(404);
-                echo json_encode(["message" => "No se encontraron calificaciones para esta inscripción"]);
+                http_response_code(200);
+                echo json_encode([
+                    "success" => true,
+                    "data" => []
+                ]);
                 return;
             }
             // Formatear respuesta para estudiante
