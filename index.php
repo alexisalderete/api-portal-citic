@@ -105,6 +105,10 @@ switch ($_SERVER['REQUEST_METHOD']) {
             $calificacionesController->update_calificaciones();
         } elseif ($action === 'update_materiales') {
             $materialesController->update_materiales_controller();
+        } elseif ($action === 'change_username') {
+            $authController->changeUsername();
+        } elseif ($action === 'change_password') {
+            $authController->changePassword();
         } else {
             http_response_code(404);
             echo json_encode(array("message" => "Endpoint PUT no encontrado."));

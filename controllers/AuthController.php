@@ -197,4 +197,78 @@ class AuthController {
     }
 
 
+    public function changeUsername() {
+        $authData = self::validateToken($this->db);
+        $data = json_decode(file_get_contents("php://input"));
+
+        if(!empty($data->new_username)) {
+            // Verificar si el nuevo nombre de usuario ya existe
+            $this->user->username = $data->new_username;
+            if($this->user->login()) {
+                http_response_code(400);
+                echo json_encode(array("message" => "El nuevo nombre de usuario ya está en uso."));
+                return;
+            }
+
+            // Actualizar el nombre de usuario
+            if($this->user->update_username_model($authData->user_id, $data->new_username)) {
+                // Generar nuevo token con el nuevo username
+                $payload = [
+                    "iss" => "citicpy.com",
+                    "aud" => "citicpy.com",
+                    "iat" => time(),
+                    "exp" => time() + 3600,
+                    "data" => [
+                        "user_id" => $authData->user_id,
+                        "username" => $data->new_username,
+                        "tipo" => $authData->tipo,
+                        "inscripciones_id" => $authData->tipo === 'estudiante' ? $authData->inscripciones_id : null
+                    ]
+                ];
+
+                $jwt = JWT::encode($payload, $this->secretKey, 'HS256');
+
+                http_response_code(200);
+                echo json_encode(array(
+                    "message" => "Nombre de usuario actualizado con éxito.",
+                    "new_token" => $jwt,
+                    "new_username" => $data->new_username
+                ));
+            } else {
+                http_response_code(500);
+                echo json_encode(array("message" => "Error al actualizar el nombre de usuario."));
+            }
+        } else {
+            http_response_code(400);
+            echo json_encode(array("message" => "Datos incompletos."));
+        }
+    }
+
+    public function changePassword() {
+        $authData = self::validateToken($this->db);
+        $data = json_decode(file_get_contents("php://input"));
+
+        if(!empty($data->current_password) && !empty($data->new_password)) {
+            // Verificar la contraseña actual
+            if(!$this->user->verify_current_password($authData->user_id, $data->current_password)) {
+                http_response_code(401);
+                echo json_encode(array("message" => "La contraseña actual es incorrecta."));
+                return;
+            }
+
+            // Actualizar la contraseña
+            if($this->user->update_password_model($authData->user_id, $data->new_password)) {
+                http_response_code(200);
+                echo json_encode(array("message" => "Contraseña actualizada con éxito."));
+            } else {
+                http_response_code(500);
+                echo json_encode(array("message" => "Error al actualizar la contraseña."));
+            }
+        } else {
+            http_response_code(400);
+            echo json_encode(array("message" => "Datos incompletos."));
+        }
+    }
+
+
 }

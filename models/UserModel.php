@@ -72,5 +72,45 @@ class UserModel {
         return $result;
     }
 
+    public function update_username_model($user_id, $new_username) {
+        $sql = 'UPDATE ' . $this->table . ' SET usuarios_nombre = :username WHERE usuarios_id = :id';
+        $result = $this->db->prepare($sql);
+        
+        $this->username = htmlspecialchars(strip_tags($new_username));
+        
+        $result->bindParam(':username', $this->username);
+        $result->bindParam(':id', $user_id);
+        
+        return $result->execute();
+    }
+
+    public function update_password_model($user_id, $new_password) {
+        $sql = 'UPDATE ' . $this->table . ' SET usuarios_clave = :password WHERE usuarios_id = :id';
+        $result = $this->db->prepare($sql);
+        
+        $hashed_password = password_hash($new_password, PASSWORD_BCRYPT);
+        
+        $result->bindParam(':password', $hashed_password);
+        $result->bindParam(':id', $user_id);
+        
+        return $result->execute();
+    }
+
+    public function verify_current_password($user_id, $current_password) {
+        $sql = 'SELECT usuarios_clave FROM ' . $this->table . ' WHERE usuarios_id = :id LIMIT 0,1';
+        $result = $this->db->prepare($sql);
+        $result->bindParam(':id', $user_id);
+        $result->execute();
+        
+        if($result->rowCount() == 1) {
+            $row = $result->fetch(PDO::FETCH_ASSOC);
+            return password_verify($current_password, $row['usuarios_clave']);
+        }
+    
+        return false;
+    }
+
+    
+
 
 }
