@@ -9,6 +9,7 @@ class CalificacionesController {
     }
 
     public function create_calificaciones() {
+        $authData = AuthController::validateToken($this->db);
         // Obtener datos del POST
         $data = json_decode(file_get_contents("php://input"), true);
 
@@ -30,6 +31,26 @@ class CalificacionesController {
             http_response_code(400);
             echo json_encode(array("message" => "inscripciones_id debe ser numérico."));
             return;
+        }
+
+        //validar si ya existe calificacion para esa inscripcion
+        $calificacion = $this->calificaciones->get_calificaciones_by_inscripcion_model($data['inscripciones_id']);
+        if ($calificacion->rowCount() > 0) {
+            http_response_code(400);
+            echo json_encode(array("message" => "Ya existe una calificación de este estudiante en esta categoría."));
+            return;
+        }
+
+        // Si es profesor, verificar que la inscripción pertenezca a uno de sus cursos
+        if ($authData->tipo === 'profesor') {
+            $inscripcionModel = new InscripcionesModel($this->db);
+            $curso = $inscripcionModel->get_curso_docente_by_inscripcion($data['inscripciones_id']);
+            
+            if (!$curso || $curso['docentes_id'] != $authData->docentes_id) {
+                http_response_code(403);
+                echo json_encode(array("message" => "No tienes permiso para agregar calificaciones en este curso."));
+                return;
+            }
         }
 
         // El segundo semestre puede ser null
@@ -59,6 +80,7 @@ class CalificacionesController {
     }
 
     public function update_calificaciones() {
+        $authData = AuthController::validateToken($this->db);
         // Obtener datos del POST
         $data = json_decode(file_get_contents("php://input"), true);
 
@@ -73,6 +95,36 @@ class CalificacionesController {
             http_response_code(400);
             echo json_encode(array("message" => "El campo calificaciones_primer es requerido."));
             return;
+        }
+        $calificacion = $this->calificaciones->get_calificaciones_by_id_model($data['id']);
+        if ($calificacion->rowCount() === 0) {
+            http_response_code(404);
+            echo json_encode(array("message" => "Calificación no encontrada."));
+            return;
+        }
+
+        if(!isset($data['inscripciones_id'])) {
+            http_response_code(400);
+            echo json_encode(array("message" => "inscripciones_id es requerido."));
+            return;
+        }
+
+        // Si es profesor, verificar que la calificación pertenezca a uno de sus cursos
+        if ($authData->tipo === 'profesor') {
+            $calificacionData = $calificacion->fetch(PDO::FETCH_ASSOC);
+            $inscripcionModel = new InscripcionesModel($this->db);
+            $curso = $inscripcionModel->get_curso_docente_by_inscripcion($calificacionData['inscripciones_id']);
+            
+            if (!$curso || $curso['docentes_id'] != $authData->docentes_id) {
+                http_response_code(403);
+                echo json_encode(array("message" => "No tienes permiso para modificar esta calificación."));
+                return;
+            }
+            if($calificacionData['inscripciones_id'] != $data['inscripciones_id']) {
+                http_response_code(403);
+                echo json_encode(array("message" => "No tienes permiso para modificar esta calificación."));
+                return;
+            }
         }
 
         // Asegurarse de que calificaciones_segundo sea null si viene vacío
@@ -95,23 +147,36 @@ class CalificacionesController {
 
     public function delete_calificaciones() {
         // Obtener datos del POST
+        $authData = AuthController::validateToken($this->db);
         $data = json_decode(file_get_contents("php://input"), true);
 
-        if(empty($data['id'])) {
-            http_response_code(400);
-            echo json_encode(array("message" => "El ID de la calificación es requerido."));
+        if($authData->tipo !== 'admin') {
+            http_response_code(403);
+            echo json_encode(array("message" => "No tienes permiso para eliminar esta calificación."));
             return;
-        }
-
-        if($this->calificaciones->delete_calificaciones_model($data['id'])) {
-            http_response_code(200);
-            echo json_encode(array("message" => "Calificación eliminada exitosamente."));
         } else {
-            http_response_code(503);
-            echo json_encode(array("message" => "No se pudo eliminar la calificación."));
+            if(empty($data['id'])) {
+                http_response_code(400);
+                echo json_encode(array("message" => "El ID de la calificación es requerido."));
+                return;
+            }
+
+            $calificacion = $this->calificaciones->get_calificaciones_by_id_model($data['id']);
+            if ($calificacion->rowCount() === 0) {
+                http_response_code(404);
+                echo json_encode(array("message" => "Calificación no encontrada."));
+                return;
+            }
+    
+            if($this->calificaciones->delete_calificaciones_model($data['id'])) {
+                http_response_code(200);
+                echo json_encode(array("message" => "Calificación eliminada exitosamente."));
+            } else {
+                http_response_code(503);
+                echo json_encode(array("message" => "No se pudo eliminar la calificación."));
+            }
         }
     }
-
 
     public function get_all_calificaciones() {
         // Obtener todos los parámetros de la solicitud
@@ -176,10 +241,27 @@ class CalificacionesController {
             return;
             
         }
-        // elseif ($authData->tipo === 'profesor') {
-        //     $this->calificaciones->docente_id = $authData->user_id;
-        //     $calificaciones = $this->calificaciones->get_calificaciones_by_docente_model();
-        // }
+        // Si es profesor, obtener todas las calificaciones
+
+        elseif ($authData->tipo === 'profesor') {
+            $this->calificaciones->docentes_id = $authData->docentes_id;
+            $calificaciones = $this->calificaciones->get_calificaciones_by_docente_model();
+
+            $params = [
+                'page' => $_GET['page'] ?? 1,
+                'perPage' => $_GET['perPage'] ?? 5,
+                'search' => $_GET['search'] ?? '',
+                'sortBy' => $_GET['sortBy'] ?? 'estudiantes.estudiantes_nombre',
+                'sortDir' => $_GET['sortDir'] ?? 'ASC'
+            ];
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'data' => $calificaciones['data'],
+                'total' => $calificaciones['total']
+            ]);
+        }
         // Si es admin, obtener todas las calificaciones
         else {
             $params = [

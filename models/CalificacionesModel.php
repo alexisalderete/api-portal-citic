@@ -7,6 +7,7 @@ class CalificacionesModel {
     public $inscripciones_id;
     public $calificaciones_primer;
     public $calificaciones_segundo;
+    public $docentes_id;
 
     public function __construct($db) {
         $this->db = $db;
@@ -177,26 +178,94 @@ class CalificacionesModel {
     }
 
     public function get_calificaciones_by_docente_model() {
-        $sql = 'SELECT c.calificaciones_id, c.inscripciones_id, 
-                       c.calificaciones_primer, c.calificaciones_segundo,
-                       cursos.cursos_nombre, 
-                       estudiantes.estudiantes_nombre, estudiantes.estudiantes_apellido
-                FROM calificaciones c
-                INNER JOIN inscripciones i ON c.inscripciones_id = i.inscripciones_id
-                INNER JOIN cursos ON i.cursos_id = cursos.cursos_id
-                INNER JOIN estudiantes ON i.estudiantes_id = estudiantes.estudiantes_id
-                WHERE cursos.docentes_id = ?';
+        // Parámetros de paginación
+        $page = $_GET['page'] ?? 1;
+        $perPage = $_GET['perPage'] ?? 5;
+        $offset = ($page - 1) * $perPage;
         
+        // Parámetros de búsqueda
+        $search = $_GET['search'] ?? '';
+        
+        // Parámetros de ordenamiento
+        $sortBy = $_GET['sortBy'] ?? 'estudiantes.estudiantes_nombre';
+        $sortDir = isset($_GET['sortDir']) && strtoupper($_GET['sortDir']) === 'DESC' ? 'DESC' : 'ASC';
+    
+        // Consulta base con JOINs necesarios
+        $sql = "SELECT 
+                  calificaciones.calificaciones_id, 
+                  calificaciones.inscripciones_id, 
+                  calificaciones.calificaciones_primer, 
+                  calificaciones.calificaciones_segundo,
+                  estudiantes.estudiantes_nombre,
+                  estudiantes.estudiantes_apellido,
+                  cursos.cursos_nombre AS cursos_nombre
+                FROM calificaciones
+                INNER JOIN inscripciones ON calificaciones.inscripciones_id = inscripciones.inscripciones_id
+                INNER JOIN estudiantes ON inscripciones.estudiantes_id = estudiantes.estudiantes_id
+                INNER JOIN cursos ON inscripciones.cursos_id = cursos.cursos_id
+                WHERE cursos.docentes_id = :docentes_id";
+    
+        // Añadir condiciones de búsqueda si hay término
+        if (!empty($search)) {
+            $sql .= " AND (estudiantes.estudiantes_nombre LIKE :search 
+                      OR estudiantes.estudiantes_apellido LIKE :search 
+                      OR cursos.cursos_nombre LIKE :search)";
+        }
+    
+        // Añadir ordenamiento
+        $sql .= " ORDER BY $sortBy $sortDir";
+    
+        // Añadir límites para paginación
+        $sql .= " LIMIT :offset, :perPage";
+    
         $result = $this->db->prepare($sql);
-        $result->bindParam(1, $this->docente_id);
+        $result->bindParam(':docentes_id', $this->docentes_id, PDO::PARAM_INT);
+    
+        // Vincular parámetros de búsqueda si es necesario
+        if (!empty($search)) {
+            $searchTerm = "%$search%";
+            $result->bindParam(':search', $searchTerm, PDO::PARAM_STR);
+        }
+    
+        // Vincular parámetros de paginación
+        $result->bindParam(':offset', $offset, PDO::PARAM_INT);
+        $result->bindParam(':perPage', $perPage, PDO::PARAM_INT);
+    
         $result->execute();
-        return $result;
+    
+        // Obtener también el conteo total para paginación
+        $countSql = "SELECT COUNT(*) as total FROM calificaciones
+                     INNER JOIN inscripciones ON calificaciones.inscripciones_id = inscripciones.inscripciones_id
+                     INNER JOIN estudiantes ON inscripciones.estudiantes_id = estudiantes.estudiantes_id
+                     INNER JOIN cursos ON inscripciones.cursos_id = cursos.cursos_id
+                     WHERE cursos.docentes_id = :docentes_id";
+    
+        if (!empty($search)) {
+            $countSql .= " AND (estudiantes.estudiantes_nombre LIKE :search 
+                           OR estudiantes.estudiantes_apellido LIKE :search 
+                           OR cursos.cursos_nombre LIKE :search)";
+        }
+    
+        $countResult = $this->db->prepare($countSql);
+        $countResult->bindParam(':docentes_id', $this->docentes_id, PDO::PARAM_INT);
+        
+        if (!empty($search)) {
+            $countResult->bindParam(':search', $searchTerm, PDO::PARAM_STR);
+        }
+    
+        $countResult->execute();
+        $total = $countResult->fetch(PDO::FETCH_ASSOC)['total'];
+    
+        return [
+            'data' => $result->fetchAll(PDO::FETCH_ASSOC),
+            'total' => $total
+        ];
     }
 
     public function get_calificaciones_by_id_model($id) {
-        $sql = 'SELECT calificaciones.calificaciones_id, inscripciones.inscripciones_id, calificaciones.calificaciones_primer, calificaciones.calificaciones_segundo FROM ' . $this->table . ' WHERE calificaciones_id = ? LIMIT 0,1';
+        $sql = 'SELECT calificaciones.calificaciones_id, calificaciones.inscripciones_id, calificaciones.calificaciones_primer, calificaciones.calificaciones_segundo FROM ' . $this->table . ' WHERE calificaciones_id = :id LIMIT 0,1';
         $result = $this->db->prepare($sql);
-        $result->bindParam(1, $id);
+        $result->bindParam(':id', $id);
         $result->execute();
         return $result;
     }

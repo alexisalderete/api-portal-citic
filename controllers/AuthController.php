@@ -28,6 +28,7 @@ class AuthController {
             $this->user->password = $data->password;
             $this->user->tipo = $data->tipo;
             $this->user->inscripciones_id = $data->inscripciones_id;
+            $this->user->docentes_id = $data->docentes_id;
 
             // Verificar si el usuario ya existe
             if($this->user->login()) {
@@ -69,7 +70,8 @@ class AuthController {
                         "user_id" => $this->user->id,
                         "username" => $this->user->username,
                         "tipo" => $this->user->tipo,
-                        "inscripciones_id" => $this->user->tipo === 'estudiante' ? $this->user->inscripciones_id : null
+                        "inscripciones_id" => $this->user->tipo === 'estudiante' ? $this->user->inscripciones_id : null,
+                        "docentes_id" => $this->user->tipo === 'profesor' ? $this->user->docentes_id : null
                     ]
                 ];
 
@@ -85,7 +87,8 @@ class AuthController {
                     "username" => $this->user->username,
                     "user_id" => $this->user->id,
                     "tipo" => $this->user->tipo,
-                    "inscripciones_id" => $this->user->tipo === 'estudiante' ? $this->user->inscripciones_id : null
+                    "inscripciones_id" => $this->user->tipo === 'estudiante' ? $this->user->inscripciones_id : null,
+                    "docentes_id" => $this->user->tipo === 'profesor' ? $this->user->docentes_id : null
                 ));
                 return;
             }
@@ -222,7 +225,8 @@ class AuthController {
                         "user_id" => $authData->user_id,
                         "username" => $data->new_username,
                         "tipo" => $authData->tipo,
-                        "inscripciones_id" => $authData->tipo === 'estudiante' ? $authData->inscripciones_id : null
+                        "inscripciones_id" => $authData->tipo === 'estudiante' ? $authData->inscripciones_id : null,
+                        "docentes_id" => $authData->tipo === 'profesor' ? $authData->docentes_id : null
                     ]
                 ];
 
