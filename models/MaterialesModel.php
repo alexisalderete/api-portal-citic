@@ -9,6 +9,7 @@ class MaterialesModel {
     public $materiales_url;
     public $materiales_tipo;
     public $cursos_id;
+    public $docentes_id;
 
     public function __construct($db) {
         $this->db = $db;
@@ -244,6 +245,97 @@ class MaterialesModel {
         ];
     }
 
+    public function get_all_materiales_by_docentes_model($params = []) {
+        $docentes_id = $params['docentes_id'];
+        // Parámetros de paginación
+        $page = isset($params['page']) ? max(1, (int)$params['page']) : 1;
+        $perPage = isset($params['perPage']) ? (int)$params['perPage'] : 5;
+        $offset = ($page - 1) * $perPage;
+      
+        // Parámetros de búsqueda
+        $search = isset($params['search']) ? $params['search'] : '';
+        $tipo = isset($params['tipo']) ? $params['tipo'] : '';
+        //$tipo = $tipo === '' ? 'material' : 'tarea';
+        
+        // Parámetros de ordenamiento
+        $sortBy = isset($params['sortBy']) ? $params['sortBy'] : 'materiales.materiales_created_at';
+        $sortDir = isset($params['sortDir']) && strtoupper($params['sortDir']) === 'DESC' ? 'DESC' : 'ASC';
+      
+        // Consulta base
+        $sql = "SELECT 
+                mc.materiales_cursos_id,
+                m.materiales_id,
+                mc.cursos_id,
+                m.materiales_nombre,
+                m.materiales_descripcion,
+                m.materiales_url,
+                m.materiales_tipo,
+                c.cursos_nombre,
+                c.docentes_id
+            FROM materiales m
+            
+            INNER JOIN materiales_cursos mc ON m.materiales_id = mc.materiales_id
+            INNER JOIN cursos c ON mc.cursos_id = c.cursos_id
+            WHERE m.materiales_tipo = :tipo
+            AND c.docentes_id = :docentes_id";
+      
+        // Añadir condiciones de búsqueda si hay término
+        if (!empty($search)) {
+          $sql .= " AND (m.materiales_nombre LIKE :search 
+                    OR c.cursos_nombre LIKE :search)";
+        }
+      
+        // Añadir ordenamiento
+        $sql .= " ORDER BY $sortBy $sortDir";
+      
+        // Añadir límites para paginación
+        $sql .= " LIMIT :offset, :perPage";
+      
+        $result = $this->db->prepare($sql);
+      
+        // Vincular parámetros de búsqueda si es necesario
+        if (!empty($search)) {
+          $searchTerm = "%$search%";
+          $result->bindParam(':search', $searchTerm);
+        }
+      
+        // Vincular parámetros de paginación
+        $result->bindParam(':offset', $offset, PDO::PARAM_INT);
+        $result->bindParam(':perPage', $perPage, PDO::PARAM_INT);
+        $result->bindParam(':tipo', $tipo);
+        $result->bindParam(':docentes_id', $docentes_id);
+      
+        $result->execute();
+      
+        // Obtener también el conteo total para paginación
+        $countSql = "SELECT COUNT(*) as total FROM materiales m
+                     INNER JOIN materiales_cursos mc ON m.materiales_id = mc.materiales_id
+                     INNER JOIN cursos c ON mc.cursos_id = c.cursos_id
+                     WHERE m.materiales_tipo = :tipo
+                     AND c.docentes_id = :docentes_id";
+      
+        if (!empty($search)) {
+          $countSql .= " AND (m.materiales_nombre LIKE :search 
+                         OR c.cursos_nombre LIKE :search)";
+        }
+      
+        $countResult = $this->db->prepare($countSql);
+        
+        if (!empty($search)) {
+          $countResult->bindParam(':search', $searchTerm);
+        }
+        $countResult->bindParam(':tipo', $tipo);
+        $countResult->bindParam(':docentes_id', $docentes_id);
+      
+        $countResult->execute();
+        $total = $countResult->fetch(PDO::FETCH_ASSOC)['total'];
+      
+        return [
+          'data' => $result->fetchAll(PDO::FETCH_ASSOC),
+          'total' => $total
+        ];
+    }
+
 
     public function get_materiales_by_curso_model($cursos_id, $tipo) {
         $sql = 'SELECT m.*, c.cursos_nombre 
@@ -294,6 +386,18 @@ class MaterialesModel {
             FROM cursos 
             GROUP BY cursos_nombre; ';
         $result = $this->db->prepare($sql);
+        $result->execute();
+        return $result;
+    }
+
+    public function get_cursos_by_docentes_model($docentes_id) {
+        # mostrar todos los cursos sin repetir
+        $sql = 'SELECT MIN(cursos_id) as cursos_id, cursos_nombre 
+            FROM cursos 
+            WHERE docentes_id = :docentes_id
+            GROUP BY cursos_nombre; ';
+        $result = $this->db->prepare($sql);
+        $result->bindParam(':docentes_id', $docentes_id);
         $result->execute();
         return $result;
     }

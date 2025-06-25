@@ -72,22 +72,65 @@ class MaterialesController {
     }
 
     public function get_cursos() {
-        $cursos = $this->materiales->get_cursos_model();
-        if($cursos->rowCount() > 0) {
-            $cursos_arr = array();
-            $cursos_arr['data'] = array();
 
-            while($row = $cursos->fetch(PDO::FETCH_ASSOC)) {
-                $curso_item = array(
-                    "cursos_id" => $row['cursos_id'],
-                    "cursos_nombre" => $row['cursos_nombre']
-                );
-                array_push($cursos_arr['data'], $curso_item);
-            }
+        $authData = AuthController::validateToken($this->db);
 
-            http_response_code(200);
-            echo json_encode($cursos_arr);
+        if ($authData->tipo === 'estudiante') {
+            http_response_code(403);
+            echo json_encode(array("message" => "No tienes permiso para obtener los cursos."));
+            return;
         }
+
+        if ($authData->tipo === 'profesor') {
+            $cursos = $this->materiales->get_cursos_by_docentes_model($authData->docentes_id);
+            if($cursos->rowCount() > 0) {
+                $cursos_arr = array();
+                $cursos_arr['data'] = array();
+    
+                while($row = $cursos->fetch(PDO::FETCH_ASSOC)) {
+                    $curso_item = array(
+                        "cursos_id" => $row['cursos_id'],
+                        "cursos_nombre" => $row['cursos_nombre']
+                    );
+                    array_push($cursos_arr['data'], $curso_item);
+                }
+    
+                http_response_code(200);
+                echo json_encode($cursos_arr);
+            }
+            else {
+                http_response_code(200);
+                echo json_encode([
+                    "success" => true,
+                    "data" => []
+                ]);
+                return;
+            }
+        }
+        else if ($authData->tipo === 'admin') {
+            $cursos = $this->materiales->get_cursos_model();
+            if($cursos->rowCount() > 0) {
+                $cursos_arr = array();
+                $cursos_arr['data'] = array();
+    
+                while($row = $cursos->fetch(PDO::FETCH_ASSOC)) {
+                    $curso_item = array(
+                        "cursos_id" => $row['cursos_id'],
+                        "cursos_nombre" => $row['cursos_nombre']
+                    );
+                    array_push($cursos_arr['data'], $curso_item);
+                }
+    
+                http_response_code(200);
+                echo json_encode($cursos_arr);
+            }
+        }
+        else {
+            http_response_code(403);
+            echo json_encode(array("message" => "No tienes permiso para obtener los cursos."));
+            return;
+        }
+
     }
 
     public function update_materiales_controller() {
@@ -244,7 +287,35 @@ class MaterialesController {
             echo json_encode($materiales_arr);
             
         }
-        else if ($authData->tipo === 'profesor' || $authData->tipo === 'admin') {
+
+        else if ($authData->tipo === 'profesor') {
+            $params = [
+                'page' => $_GET['page'] ?? 1,
+                'perPage' => $_GET['perPage'] ?? 5,
+                'search' => $_GET['search'] ?? '',
+                'sortBy' => $_GET['sortBy'] ?? 'materiales.materiales_created_at',
+                'sortDir' => $_GET['sortDir'] ?? 'DESC',
+                'tipo' => $_GET['tipo'] ?? '',
+                'docentes_id' => $authData->docentes_id
+            ];
+
+            if($params['tipo'] != 'material' && $params['tipo'] != 'tarea'){
+                http_response_code(404);
+                echo json_encode(["message" => "El tipo de material es diferente a material y tarea"]);
+                return;
+            }
+
+            // Pasar el término de búsqueda al modelo
+            $materiales = $this->materiales->get_all_materiales_by_docentes_model($params);
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'data' => $materiales['data'],
+                'total' => $materiales['total']
+            ]);
+        }
+        else if ($authData->tipo === 'admin') {
             $params = [
                 'page' => $_GET['page'] ?? 1,
                 'perPage' => $_GET['perPage'] ?? 5,

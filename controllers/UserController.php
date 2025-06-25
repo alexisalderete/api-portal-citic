@@ -52,7 +52,9 @@ class UserController {
                     "id" => $row['usuarios_id'],
                     "username" => $row['usuarios_nombre'],
                     "name" => $row['usuarios_nombre'],
-                    "tipo" => $row['usuarios_tipo']
+                    "tipo" => $row['usuarios_tipo'],
+                    "inscripciones_id" => $row['inscripciones_id'],
+                    "docentes_id" => $row['docentes_id']
                     //"email" => $row['usuarios_email'] ?? '',
                     //"createdAt" => $row['fecha_creacion'] ?? ''
                 ];
