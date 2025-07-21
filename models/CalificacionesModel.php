@@ -102,17 +102,21 @@ class CalificacionesModel {
                   calificaciones.calificaciones_segundo,
                   estudiantes.estudiantes_nombre,
                   estudiantes.estudiantes_apellido,
-                  cursos.cursos_nombre AS cursos_nombre
+                  cursos.cursos_nombre AS cursos_nombre,
+                  sedes.sedes_ciudad
                 FROM calificaciones
                 INNER JOIN inscripciones ON calificaciones.inscripciones_id = inscripciones.inscripciones_id
                 INNER JOIN estudiantes ON inscripciones.estudiantes_id = estudiantes.estudiantes_id
-                INNER JOIN cursos ON inscripciones.cursos_id = cursos.cursos_id";
+                INNER JOIN cursos ON inscripciones.cursos_id = cursos.cursos_id
+                INNER JOIN cursos_sedes ON cursos.cursos_id = cursos_sedes.cursos_id
+                INNER JOIN sedes ON cursos_sedes.sedes_id = sedes.sedes_id";
       
         // Añadir condiciones de búsqueda si hay término
         if (!empty($search)) {
           $sql .= " WHERE estudiantes.estudiantes_nombre LIKE :search 
                     OR estudiantes.estudiantes_apellido LIKE :search 
-                    OR cursos.cursos_nombre LIKE :search";
+                    OR cursos.cursos_nombre LIKE :search
+                    OR sedes.sedes_ciudad LIKE :search";
         }
       
         // Añadir ordenamiento
@@ -139,12 +143,15 @@ class CalificacionesModel {
         $countSql = "SELECT COUNT(*) as total FROM calificaciones
                      INNER JOIN inscripciones ON calificaciones.inscripciones_id = inscripciones.inscripciones_id
                      INNER JOIN estudiantes ON inscripciones.estudiantes_id = estudiantes.estudiantes_id
-                     INNER JOIN cursos ON inscripciones.cursos_id = cursos.cursos_id";
+                     INNER JOIN cursos ON inscripciones.cursos_id = cursos.cursos_id
+                     INNER JOIN cursos_sedes ON cursos.cursos_id = cursos_sedes.cursos_id
+                     INNER JOIN sedes ON cursos_sedes.sedes_id = sedes.sedes_id";
       
         if (!empty($search)) {
           $countSql .= " WHERE estudiantes.estudiantes_nombre LIKE :search 
                          OR estudiantes.estudiantes_apellido LIKE :search 
-                         OR cursos.cursos_nombre LIKE :search";
+                         OR cursos.cursos_nombre LIKE :search
+                         OR sedes.sedes_ciudad LIKE :search";
         }
       
         $countResult = $this->db->prepare($countSql);
@@ -165,10 +172,13 @@ class CalificacionesModel {
     public function get_calificaciones_by_inscripcion_model($inscripciones_id) {
         $sql = 'SELECT c.calificaciones_id, c.inscripciones_id, 
                        c.calificaciones_primer, c.calificaciones_segundo,
-                       cursos.cursos_nombre
+                       cursos.cursos_nombre,
+                       sedes.sedes_ciudad
                 FROM calificaciones c
                 INNER JOIN inscripciones i ON c.inscripciones_id = i.inscripciones_id
                 INNER JOIN cursos ON i.cursos_id = cursos.cursos_id
+                INNER JOIN cursos_sedes ON cursos.cursos_id = cursos_sedes.cursos_id
+                INNER JOIN sedes ON cursos_sedes.sedes_id = sedes.sedes_id
                 WHERE c.inscripciones_id = :inscripciones_id';
         
         $result = $this->db->prepare($sql);
@@ -198,18 +208,22 @@ class CalificacionesModel {
                   calificaciones.calificaciones_segundo,
                   estudiantes.estudiantes_nombre,
                   estudiantes.estudiantes_apellido,
-                  cursos.cursos_nombre AS cursos_nombre
+                  cursos.cursos_nombre AS cursos_nombre,
+                  sedes.sedes_ciudad
                 FROM calificaciones
                 INNER JOIN inscripciones ON calificaciones.inscripciones_id = inscripciones.inscripciones_id
                 INNER JOIN estudiantes ON inscripciones.estudiantes_id = estudiantes.estudiantes_id
                 INNER JOIN cursos ON inscripciones.cursos_id = cursos.cursos_id
+                INNER JOIN cursos_sedes ON cursos.cursos_id = cursos_sedes.cursos_id
+                INNER JOIN sedes ON cursos_sedes.sedes_id = sedes.sedes_id
                 WHERE cursos.docentes_id = :docentes_id";
     
         // Añadir condiciones de búsqueda si hay término
         if (!empty($search)) {
             $sql .= " AND (estudiantes.estudiantes_nombre LIKE :search 
                       OR estudiantes.estudiantes_apellido LIKE :search 
-                      OR cursos.cursos_nombre LIKE :search)";
+                      OR cursos.cursos_nombre LIKE :search
+                      OR sedes.sedes_ciudad LIKE :search)";
         }
     
         // Añadir ordenamiento
@@ -238,12 +252,15 @@ class CalificacionesModel {
                      INNER JOIN inscripciones ON calificaciones.inscripciones_id = inscripciones.inscripciones_id
                      INNER JOIN estudiantes ON inscripciones.estudiantes_id = estudiantes.estudiantes_id
                      INNER JOIN cursos ON inscripciones.cursos_id = cursos.cursos_id
+                     INNER JOIN cursos_sedes ON cursos.cursos_id = cursos_sedes.cursos_id
+                     INNER JOIN sedes ON cursos_sedes.sedes_id = sedes.sedes_id
                      WHERE cursos.docentes_id = :docentes_id";
     
         if (!empty($search)) {
             $countSql .= " AND (estudiantes.estudiantes_nombre LIKE :search 
                            OR estudiantes.estudiantes_apellido LIKE :search 
-                           OR cursos.cursos_nombre LIKE :search)";
+                           OR cursos.cursos_nombre LIKE :search
+                           OR sedes.sedes_ciudad LIKE :search)";
         }
     
         $countResult = $this->db->prepare($countSql);

@@ -230,6 +230,7 @@ class CalificacionesController {
                 $calificaciones_item = array(
                     "calificaciones_id" => $row['calificaciones_id'],
                     "cursos_nombre" => $row['cursos_nombre'],
+                    "sedes_ciudad" => $row['sedes_ciudad'],
                     "calificaciones_primer" => $row['calificaciones_primer'],
                     "calificaciones_segundo" => $row['calificaciones_segundo']
                 );
