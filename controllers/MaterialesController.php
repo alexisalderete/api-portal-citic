@@ -238,7 +238,7 @@ class MaterialesController {
 
 
 
-        if ($authData->tipo === 'estudiante') {
+        if ($authData->tipo === 'estudiante' && false) {
             if (empty($authData->inscripciones_id)) {
                 http_response_code(404);
                 echo json_encode(["message" => "Estudiante no tiene inscripción asociada"]);
@@ -288,7 +288,7 @@ class MaterialesController {
             
         }
 
-        else if ($authData->tipo === 'profesor') {
+        else if ($authData->tipo === 'profesor' && false) {
             $params = [
                 'page' => $_GET['page'] ?? 1,
                 'perPage' => $_GET['perPage'] ?? 5,
@@ -315,14 +315,16 @@ class MaterialesController {
                 'total' => $materiales['total']
             ]);
         }
-        else if ($authData->tipo === 'admin') {
+        else if ($authData->tipo === 'admin' || $authData->tipo === 'profesor' || $authData->tipo === 'estudiante') {
             $params = [
                 'page' => $_GET['page'] ?? 1,
                 'perPage' => $_GET['perPage'] ?? 5,
                 'search' => $_GET['search'] ?? '',
                 'sortBy' => $_GET['sortBy'] ?? 'materiales.materiales_created_at',
                 'sortDir' => $_GET['sortDir'] ?? 'DESC',
-                'tipo' => $_GET['tipo'] ?? ''
+                'tipo' => $_GET['tipo'] ?? '',
+                'docentes_id' => $authData->docentes_id ?? null,
+                'inscripciones_id' => $authData->inscripciones_id ?? null
             ];
 
             if($params['tipo'] != 'material' && $params['tipo'] != 'tarea'){

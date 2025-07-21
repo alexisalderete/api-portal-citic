@@ -1,0 +1,6 @@
+{
+    "name": "alex/api-portal",
+    "require": {
+        "phpmailer/phpmailer": "^6.10"
+    }
+}

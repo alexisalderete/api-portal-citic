@@ -59,6 +59,24 @@ class AuthController {
             $username_exists = $this->user->login();
 
             if($username_exists && password_verify($data->password, $this->user->password)) {
+                // Configurar parámetros de sesión más seguros
+                $sessionParams = session_get_cookie_params();
+                session_set_cookie_params([
+                    'lifetime' => $sessionParams['lifetime'],
+                    'path' => '/',
+                    'domain' => '.citicpy.com', // Usa tu dominio
+                    'secure' => true, // Solo HTTPS
+                    'httponly' => true,
+                    'samesite' => 'None' // Para cross-site
+                ]);
+
+                session_start();
+                session_regenerate_id(true); // Mejor seguridad
+
+                // Iniciar sesión PHP para la pagina
+                $_SESSION['idusuarios'] = $this->user->id;
+                $_SESSION['usu_nombre'] = $this->user->username;
+                $_SESSION['usu_rol'] = $this->user->tipo;
 
                 // Configurar el payload del token
                 $payload = [
@@ -71,7 +89,8 @@ class AuthController {
                         "username" => $this->user->username,
                         "tipo" => $this->user->tipo,
                         "inscripciones_id" => $this->user->tipo === 'estudiante' ? $this->user->inscripciones_id : null,
-                        "docentes_id" => $this->user->tipo === 'profesor' ? $this->user->docentes_id : null
+                        "docentes_id" => $this->user->tipo === 'profesor' ? $this->user->docentes_id : null,
+                        "session_id" => session_id()
                     ]
                 ];
 
@@ -88,7 +107,8 @@ class AuthController {
                     "user_id" => $this->user->id,
                     "tipo" => $this->user->tipo,
                     "inscripciones_id" => $this->user->tipo === 'estudiante' ? $this->user->inscripciones_id : null,
-                    "docentes_id" => $this->user->tipo === 'profesor' ? $this->user->docentes_id : null
+                    "docentes_id" => $this->user->tipo === 'profesor' ? $this->user->docentes_id : null,
+                    "session_id" => session_id()
                 ));
                 return;
             }
@@ -101,6 +121,19 @@ class AuthController {
             "message" => "Login fallido. Credenciales incorrectas."
         ]);
         return;
+    }
+
+    public function logout() {
+        // Limpiar solo el lado del servidor
+        session_start();
+        session_unset();
+        session_destroy();
+        
+        http_response_code(200);
+        echo json_encode(array(
+            "message" => "Logout exitoso",
+            "clear_local_storage" => true // Bandera para que el frontend limpie
+        ));
     }
 
 
