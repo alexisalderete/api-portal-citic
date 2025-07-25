@@ -216,7 +216,10 @@ class CalificacionesModel {
                 INNER JOIN cursos ON inscripciones.cursos_id = cursos.cursos_id
                 INNER JOIN cursos_sedes ON cursos.cursos_id = cursos_sedes.cursos_id
                 INNER JOIN sedes ON cursos_sedes.sedes_id = sedes.sedes_id
-                WHERE cursos.docentes_id = :docentes_id";
+
+                INNER JOIN cursos_docentes on cursos.cursos_id = cursos_docentes.cursos_id
+
+                WHERE cursos_docentes.docentes_id = :docentes_id";
     
         // Añadir condiciones de búsqueda si hay término
         if (!empty($search)) {
@@ -254,7 +257,9 @@ class CalificacionesModel {
                      INNER JOIN cursos ON inscripciones.cursos_id = cursos.cursos_id
                      INNER JOIN cursos_sedes ON cursos.cursos_id = cursos_sedes.cursos_id
                      INNER JOIN sedes ON cursos_sedes.sedes_id = sedes.sedes_id
-                     WHERE cursos.docentes_id = :docentes_id";
+                     INNER JOIN cursos_docentes on cursos.cursos_id = cursos_docentes.cursos_id
+
+                     WHERE cursos_docentes.docentes_id = :docentes_id";
     
         if (!empty($search)) {
             $countSql .= " AND (estudiantes.estudiantes_nombre LIKE :search 
