@@ -212,29 +212,51 @@ class CalificacionesController {
                 return;
             }
             
-            $calificaciones = $this->calificaciones->get_calificaciones_by_inscripcion_model($authData->inscripciones_id);
+            // $calificaciones = $this->calificaciones->get_calificaciones_by_inscripcion_model($authData->inscripciones_id);
 
-            if ($calificaciones->rowCount() === 0) {
-                http_response_code(200);
-                echo json_encode([
-                    "success" => true,
-                    "data" => []
-                ]);
-                return;
-            }
+            // if ($calificaciones->rowCount() === 0) {
+            //     http_response_code(200);
+            //     echo json_encode([
+            //         "success" => true,
+            //         "data" => []
+            //     ]);
+            //     return;
+            // }
             // Formatear respuesta para estudiante
             $calificaciones_arr = array();
             $calificaciones_arr['data'] = array();
 
-            while($row = $calificaciones->fetch(PDO::FETCH_ASSOC)) {
-                $calificaciones_item = array(
-                    "calificaciones_id" => $row['calificaciones_id'],
-                    "cursos_nombre" => $row['cursos_nombre'],
-                    "sedes_ciudad" => $row['sedes_ciudad'],
-                    "calificaciones_primer" => $row['calificaciones_primer'],
-                    "calificaciones_segundo" => $row['calificaciones_segundo']
-                );
-                array_push($calificaciones_arr['data'], $calificaciones_item);
+            // Si es un array de inscripciones (múltiples cursos)
+            if (is_array($authData->inscripciones_id)) {
+                foreach ($authData->inscripciones_id as $inscripcion_id) {
+                    $calificaciones = $this->calificaciones->get_calificaciones_by_inscripcion_model($inscripcion_id);
+                    
+                    while($row = $calificaciones->fetch(PDO::FETCH_ASSOC)) {
+                        $calificaciones_item = array(
+                            "calificaciones_id" => $row['calificaciones_id'],
+                            "cursos_nombre" => $row['cursos_nombre'],
+                            "sedes_ciudad" => $row['sedes_ciudad'],
+                            "calificaciones_primer" => $row['calificaciones_primer'],
+                            "calificaciones_segundo" => $row['calificaciones_segundo']
+                        );
+                        array_push($calificaciones_arr['data'], $calificaciones_item);
+                    }
+                }
+            } 
+            // Si es solo una inscripción (valor único)
+            else {
+                $calificaciones = $this->calificaciones->get_calificaciones_by_inscripcion_model($authData->inscripciones_id);
+                
+                while($row = $calificaciones->fetch(PDO::FETCH_ASSOC)) {
+                    $calificaciones_item = array(
+                        "calificaciones_id" => $row['calificaciones_id'],
+                        "cursos_nombre" => $row['cursos_nombre'],
+                        "sedes_ciudad" => $row['sedes_ciudad'],
+                        "calificaciones_primer" => $row['calificaciones_primer'],
+                        "calificaciones_segundo" => $row['calificaciones_segundo']
+                    );
+                    array_push($calificaciones_arr['data'], $calificaciones_item);
+                }
             }
 
             http_response_code(200);

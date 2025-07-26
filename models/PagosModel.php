@@ -12,6 +12,7 @@ class PagosModel {
                     CONCAT(e.estudiantes_nombre, ' ', e.estudiantes_apellido) AS estudiante,
                     c.cursos_nombre AS curso,
                     s.sedes_ciudad AS sede,
+                    i.inscripciones_id,  -- <- Este es el campo nuevo agregado
                     
                     -- Conceptos regulares
                     -- Matrícula
@@ -118,7 +119,7 @@ class PagosModel {
                 WHERE 
                     i.inscripciones_id = :inscripciones_id
                 GROUP BY 
-                    e.estudiantes_id, c.cursos_id, s.sedes_id";
+                    e.estudiantes_id, c.cursos_id, s.sedes_id, i.inscripciones_id"; // i.inscripciones_id <- Este es el campo nuevo agregado
 
         $result = $this->db->prepare($sql);
         $result->bindParam(':inscripciones_id', $inscripciones_id);

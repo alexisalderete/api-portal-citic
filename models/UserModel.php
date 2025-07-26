@@ -22,13 +22,41 @@ class UserModel {
         $result->execute();
         if($result->rowCount() == 1) {
             $row = $result->fetch(PDO::FETCH_ASSOC);
-            $this->id = $row['usuarios_id'];
-            $this->username = $row['usuarios_nombre'];
-            $this->password = $row['usuarios_clave'];
-            $this->tipo = $row['usuarios_tipo'];
-            $this->inscripciones_id = $row['inscripciones_id'];
-            $this->docentes_id = $row['docentes_id'];
-            return true;
+            if($row['usuarios_tipo'] === 'estudiante') {
+
+                $estudiantes_sql = 'SELECT usuarios.usuarios_id, usuarios_nombre, usuarios_clave, usuarios_tipo, usuarios_inscripciones.inscripciones_id, docentes_id FROM usuarios
+                left join usuarios_inscripciones on usuarios.usuarios_id = usuarios_inscripciones.usuarios_id WHERE usuarios_nombre = ?';
+                $estudiantes_result = $this->db->prepare($estudiantes_sql);
+                $estudiantes_result->bindParam(1, $this->username);
+                $estudiantes_result->execute();
+
+                $row_estudiantes = $estudiantes_result->fetchAll(PDO::FETCH_ASSOC);
+                $this->id = $row_estudiantes[0]['usuarios_id'];
+                $this->username = $row_estudiantes[0]['usuarios_nombre'];
+                $this->password = $row_estudiantes[0]['usuarios_clave'];
+                $this->tipo = $row_estudiantes[0]['usuarios_tipo'];
+
+                // Crear un array para almacenar todos los IDs de inscripción
+                $inscripciones_ids = array();
+                foreach ($row_estudiantes as $estudiante) {
+                    if (!empty($estudiante['inscripciones_id'])) {
+                        $inscripciones_ids[] = $estudiante['inscripciones_id'];
+                    }
+                }
+                // Asignar el array de IDs o null si no hay inscripciones
+                $this->inscripciones_id = !empty($inscripciones_ids) ? $inscripciones_ids : null;
+                
+                return true;
+            }
+            else {
+                $this->id = $row['usuarios_id'];
+                $this->username = $row['usuarios_nombre'];
+                $this->password = $row['usuarios_clave'];
+                $this->tipo = $row['usuarios_tipo'];
+                $this->inscripciones_id = $row['inscripciones_id'];
+                $this->docentes_id = $row['docentes_id'];
+                return true;
+            }
         }
 
         return false;
