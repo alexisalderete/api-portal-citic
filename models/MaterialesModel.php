@@ -392,10 +392,11 @@ class MaterialesModel {
 
     public function get_cursos_by_docentes_model($docentes_id) {
         # mostrar todos los cursos sin repetir
-        $sql = 'SELECT MIN(cursos_id) as cursos_id, cursos_nombre 
+        $sql = 'SELECT MIN(cursos.cursos_id) as cursos_id, cursos.cursos_nombre
             FROM cursos 
-            WHERE docentes_id = :docentes_id
-            GROUP BY cursos_nombre; ';
+            INNER JOIN cursos_docentes ON cursos.cursos_id = cursos_docentes.cursos_id
+            WHERE cursos_docentes.docentes_id = :docentes_id
+            GROUP BY cursos.cursos_nombre; ';
         $result = $this->db->prepare($sql);
         $result->bindParam(':docentes_id', $docentes_id);
         $result->execute();
