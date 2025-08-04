@@ -42,16 +42,16 @@ class CalificacionesController {
         }
 
         // Si es profesor, verificar que la inscripción pertenezca a uno de sus cursos
-        if ($authData->tipo === 'profesor') {
-            $inscripcionModel = new InscripcionesModel($this->db);
-            $curso = $inscripcionModel->get_curso_docente_by_inscripcion($data['inscripciones_id']);
+        // if ($authData->tipo === 'profesor') {
+        //     $inscripcionModel = new InscripcionesModel($this->db);
+        //     $curso = $inscripcionModel->get_curso_docente_by_inscripcion($data['inscripciones_id']);
             
-            if (!$curso || $curso['docentes_id'] != $authData->docentes_id) {
-                http_response_code(403);
-                echo json_encode(array("message" => "No tienes permiso para agregar calificaciones en este curso."));
-                return;
-            }
-        }
+        //     if (!$curso || $curso['docentes_id'] != $authData->docentes_id) {
+        //         http_response_code(403);
+        //         echo json_encode(array("message" => "No tienes permiso para agregar calificaciones en este curso."));
+        //         return;
+        //     }
+        // }
 
         // El segundo semestre puede ser null
         $calificaciones_segundo = isset($data['calificaciones_segundo']) ? $data['calificaciones_segundo'] : null;
