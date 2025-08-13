@@ -10,6 +10,7 @@ class PagosModel {
         $sql = "SELECT 
                     e.estudiantes_dni,
                     CONCAT(e.estudiantes_nombre, ' ', e.estudiantes_apellido) AS estudiante,
+                    c.cursos_id as cursos_id,
                     c.cursos_nombre AS curso,
                     s.sedes_ciudad AS sede,
                     i.inscripciones_id,  -- <- Este es el campo nuevo agregado
@@ -145,6 +146,7 @@ class PagosModel {
         $sql = "SELECT 
                     e.estudiantes_dni,
                     CONCAT(e.estudiantes_nombre, ' ', e.estudiantes_apellido) AS estudiante,
+                    c.cursos_id as cursos_id,
                     c.cursos_nombre AS curso,
                     s.sedes_ciudad AS sede,
                     COALESCE(SUM(rp.monto_pagado), 0) AS total_pagado,
